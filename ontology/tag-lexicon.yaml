@@ -1,0 +1,13 @@
+# Canonical token → canonical ETK tags
+tag_map:
+  standup:
+    - "#context/work"
+    - "#status/active"
+
+  brasstax:
+    - "#area/projects/brasstax"
+
+  chickfilgay:
+    - "#area/projects/chickfilgay"
+
+  

@@ -1,0 +1,12 @@
+[project]
+name = "wattson-agent-core"
+version = "0.0.1"
+requires-python = ">=3.10"
+dependencies = [
+  "pyyaml>=6.0",
+  "jsonschema>=4.22.0",
+  "rich>=13.7.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

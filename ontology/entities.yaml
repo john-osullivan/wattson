@@ -1,0 +1,4 @@
+entities:
+  person/josefina-de-varona:
+    aliases: ["josefina", "j d v", "mom"]
+    tags: ["#entity/person", "#area/real-estate"]

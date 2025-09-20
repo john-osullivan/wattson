@@ -1,0 +1,11 @@
+# env and local
+.env
+*.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+dist/
+# worktrees (created outside repo root, but just in case)
+worktree-*/

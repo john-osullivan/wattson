@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "type":    { "enum": ["hub", "project", "atom", "evergreen", "source", "fleeting"] },
+    "status":  { "enum": ["active", "someday", "incubating", "done", "dropped"] },
+    "maturity":{"enum": ["seed", "budding", "stable"] },
+    "horizon": { "enum": ["1-current-actions", "2-projects", "3-areas-of-focus", "4-vision-goals", "5-purpose-principles"] },
+    "context": { "enum": ["work", "home", "computer", "phone"] }
+  },
+  "additionalProperties": false
+}

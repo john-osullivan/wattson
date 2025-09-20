@@ -1,0 +1,10 @@
+# Free-form → canonical token (case/space insensitive in code)
+normalize:
+  "daily stand-up": "standup"
+  "stand-ups": "standup"
+  "standup": "standup"
+  "scrum": "standup"
+
+  "brass tax": "brasstax"
+  "brass-tax": "brasstax"
+  "brasstax": "brasstax"

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/etk.schema.json",
+  "title": "ETK Frontmatter",
+  "type": "object",
+  "allOf": [{ "$ref": "enums.json" }],
+  "properties": {
+    "type":    { "$ref": "enums.json#/properties/type" },
+    "status":  { "$ref": "enums.json#/properties/status" },
+    "maturity":{"$ref": "enums.json#/properties/maturity" },
+    "horizon": { "$ref": "enums.json#/properties/horizon" },
+    "context": { "$ref": "enums.json#/properties/context" },
+    "area":    { "type": "string" },
+    "aliases": { "type": "array", "items": { "type": "string" } },
+    "capture": { "type": "string", "enum": ["voice","text","import"] },
+    "captured_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["type"],
+  "additionalProperties": true
+}
