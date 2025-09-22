@@ -1,12 +1,32 @@
-[project]
+[tool.poetry]
 name = "wattson-agent-core"
-version = "0.0.1"
-requires-python = ">=3.10"
-dependencies = [
-  "pyyaml>=6.0",
-  "jsonschema>=4.22.0",
-  "rich>=13.7.1",
-]
+version = "0.1.0"
+description = "WATTSON AI agent core (Autogen orchestration + deterministic tools)"
+authors = ["John <you@example.com>"]
+readme = "README.md"
+packages = [{ include = "agent_core" }]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+pyautogen = "*"
+jsonschema = "*"
+pyyaml = "*"
+python-frontmatter = "*"
+rich = "*"
+httpx = "*"               # lightweight HTTP client if you need it
+
+# Optional: point at OpenAI-compatible SDK if you want direct calls outside Autogen tools
+# openai = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+ruff = "*"
+black = "*"
+pip-tools = "*"
+
+[tool.poetry.scripts]
+wattson-agent = "agent_core.wattson.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,250 @@
+version: 1
+notes: >
+  Each term intentionally favors recall. Aliases may appear under multiple terms.
+  Matching is case/punctuation-insensitive; do substring or n-gram checks in the agent.
+
+terms:
+
+  # ----- Brasstax (root + groups)
+  brasstax:
+    aliases: ["brasstax", "brass tax", "bt"]
+    tags: ["#area/brasstax"]
+
+  "brasstax product":
+    aliases: ["brasstax product", "product (brasstax)", "bt product"]
+    tags: ["#area/brasstax/product"]
+
+  "credibility models":
+    aliases: ["credibility models", "credibility scoring", "reputation scoring"]
+    tags: ["#area/brasstax/product/credibility-models"]
+
+  "ux design":
+    aliases: ["ux design", "product ux", "interaction design"]
+    tags:
+      - "#area/brasstax/product/ux-design"
+      - "#area/creative/design"
+
+  "abuse prevention":
+    aliases: ["abuse prevention", "abuse mitigation", "anti-abuse", "trust & safety"]
+    tags:
+      - "#area/brasstax/product/abuse-prevention"
+      - "#area/society/politics"
+
+  "brasstax market":
+    aliases: ["brasstax market", "market (brasstax)"]
+    tags: ["#area/brasstax/market"]
+
+  disinformation:
+    aliases: ["disinformation", "misinformation", "propaganda", "information ops", "influence campaign"]
+    tags:
+      - "#area/society/disinformation"
+      - "#area/brasstax/market/disinformation"
+
+  "media analysis":
+    aliases: ["media analysis", "news analysis", "coverage analysis"]
+    tags:
+      - "#area/society/media"
+      - "#area/brasstax/market/media-analysis"
+
+  research:
+    aliases: ["market research", "competitive research", "desk research", "research"]
+    tags:
+      - "#area/brasstax/market/research"
+      - "#area/business/product-management"
+
+  "brasstax strategy":
+    aliases: ["brasstax strategy", "strategy (brasstax)"]
+    tags: ["#area/brasstax/strategy"]
+
+  gtm:
+    aliases: ["gtm", "go to market", "go-to-market"]
+    tags:
+      - "#area/brasstax/strategy/gtm"
+      - "#area/business/startups"
+      - "#area/business/product-management"
+
+  economics:
+    aliases: ["economics", "pricing economics", "unit economics"]
+    tags:
+      - "#area/business/economics"
+      - "#area/brasstax/strategy/economics"
+
+  naming:
+    aliases: ["naming", "product naming", "brand naming"]
+    tags:
+      - "#area/brasstax/strategy/naming"
+      - "#area/creative/design"
+
+  "brasstax philosophy":
+    aliases: ["brasstax philosophy", "philosophy (brasstax)"]
+    tags: ["#area/brasstax/philosophy"]
+
+  epistemology:
+    aliases: ["epistemology", "knowledge theory"]
+    tags: ["#area/brasstax/philosophy/epistemology"]
+
+  ethics:
+    aliases: ["ethics", "moral philosophy"]
+    tags:
+      - "#area/brasstax/philosophy/ethics"
+      - "#area/society/politics"
+
+  # ----- Business
+  business:
+    aliases: ["business"]
+    tags: ["#area/business"]
+
+  startups:
+    aliases: ["startup", "startups", "founder stuff"]
+    tags: ["#area/business/startups"]
+
+  "product management":
+    aliases: ["product management", "pm", "roadmapping"]
+    tags: ["#area/business/product-management"]
+
+  "venture capital":
+    aliases: ["venture capital", "vc", "fundraising"]
+    tags: ["#area/business/venture-capital"]
+
+  # economics term above covers business economics
+
+  # ----- Career
+  career:
+    aliases: ["career"]
+    tags: ["#area/career"]
+
+  "job search":
+    aliases: ["job search", "job hunt", "interview prep"]
+    tags: ["#area/career/job-search"]
+
+  management:
+    aliases: ["management", "people management", "team leadership"]
+    tags: ["#area/career/management"]
+
+  "professional development":
+    aliases: ["professional development", "career growth", "skills development"]
+    tags: ["#area/career/professional-development"]
+
+  # ----- Comedy
+  comedy:
+    aliases: ["comedy"]
+    tags: ["#area/comedy"]
+
+  "dark comedy":
+    aliases: ["dark comedy", "gallows humor"]
+    tags: ["#area/comedy/dark"]
+
+  "programming comedy":
+    aliases: ["programming comedy", "dev jokes", "coding humor"]
+    tags:
+      - "#area/comedy/programming"
+      - "#area/tech/programming"
+
+  "business comedy":
+    aliases: ["business comedy", "workplace humor"]
+    tags:
+      - "#area/comedy/business"
+      - "#area/business"
+
+  satire:
+    aliases: ["satire", "satirical"]
+    tags:
+      - "#area/comedy/satire"
+      - "#area/society/politics"
+
+  # ----- Creative
+  creative:
+    aliases: ["creative"]
+    tags: ["#area/creative"]
+
+  writing:
+    aliases: ["writing", "essays", "prose"]
+    tags: ["#area/creative/writing"]
+
+  design:
+    aliases: ["design", "visual design", "graphic design"]
+    tags: ["#area/creative/design"]
+
+  # ----- Personal
+  personal:
+    aliases: ["personal"]
+    tags: ["#area/personal"]
+
+  family:
+    aliases: ["family"]
+    tags: ["#area/personal/family"]
+
+  friends:
+    aliases: ["friends"]
+    tags: ["#area/personal/friends"]
+
+  journaling:
+    aliases: ["journaling", "journal"]
+    tags: ["#area/personal/journaling"]
+
+  relationships:
+    aliases: ["relationships", "dating", "partnership"]
+    tags: ["#area/personal/relationships"]
+
+  travel:
+    aliases: ["travel", "trip planning"]
+    tags: ["#area/personal/travel"]
+
+  # ----- Projects
+  projects:
+    aliases: ["projects"]
+    tags: ["#area/projects"]
+
+  "chick-fil-gay":
+    aliases: ["chick-fil-gay", "chick fil gay", "cfg"]
+    tags: ["#area/projects/chick-fil-gay"]
+
+  "johno dev":
+    aliases: ["johno dev", "johno.dev"]
+    tags: ["#area/projects/johno-dev"]
+
+  # ----- Society
+  society:
+    aliases: ["society", "social issues"]
+    tags: ["#area/society"]
+
+  journalism:
+    aliases: ["journalism", "newsroom"]
+    tags: ["#area/society/journalism"]
+
+  media:
+    aliases: ["media", "news media"]
+    tags: ["#area/society/media"]
+
+  politics:
+    aliases: ["politics", "policy"]
+    tags: ["#area/society/politics"]
+
+  sociology:
+    aliases: ["sociology", "social science"]
+    tags: ["#area/society/sociology"]
+
+  # ----- Tech
+  tech:
+    aliases: ["tech", "technology"]
+    tags: ["#area/tech"]
+
+  ai:
+    aliases: ["ai", "artificial intelligence", "machine learning"]
+    tags: ["#area/tech/ai"]
+
+  blockchain:
+    aliases: ["blockchain", "crypto", "web3"]
+    tags: ["#area/tech/blockchain"]
+
+  cybersecurity:
+    aliases: ["cybersecurity", "security", "infosec"]
+    tags: ["#area/tech/cybersecurity"]
+
+  fintech:
+    aliases: ["fintech", "financial technology"]
+    tags: ["#area/tech/fintech"]
+
+  programming:
+    aliases: ["programming", "software development", "coding"]
+    tags: ["#area/tech/programming"]
