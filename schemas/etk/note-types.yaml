@@ -1,0 +1,56 @@
+# WATTSON ETK — note roles
+#
+# Human-editable source of truth for the durable note roles.
+# Transcribed from wattson-handoff/reference/01-etk-information-model.md §2.
+#
+# Note: `fleeting` is a capture role, not a #type axis value — see
+# ontology.yaml (axes.type). The #type axis covers durable corpus notes.
+
+version: 1
+
+roles:
+  fleeting:
+    durable: false
+    summary: >
+      Low-friction raw capture. Minimal or no required semantic structure;
+      may be transient; commonly originates in Daily Notes or inbox capture;
+      intended to be clarified later.
+
+  atom:
+    durable: true
+    summary: >
+      The fundamental durable knowledge unit. Expresses one meaningful
+      concept; has a declarative title where practical; is independently
+      linkable; preserves the user's idea rather than expanding it into
+      unrelated synthesis. Atomicity is conceptual, not a word-count rule.
+
+  evergreen:
+    durable: true
+    summary: >
+      A durable synthesis. Expresses an integrative idea rather than merely
+      summarizing one source fragment; generally draws on multiple Atoms or
+      pieces of evidence; contains meaningful original synthesis. Create
+      conservatively; large notes are not automatically Evergreens.
+
+  project:
+    durable: true
+    summary: >
+      A desired outcome requiring multiple actions. Properties can include
+      status, due date, Area relationship, tasks/next actions, and relevant
+      knowledge links.
+
+  source:
+    durable: true
+    summary: >
+      External source material (article, book, PDF, video, website, paper)
+      represented separately from the user's durable ideas. Can preserve
+      bibliographic information, excerpts, summary, and reflections while
+      Atoms represent ideas extracted from it.
+
+  hub:
+    durable: true
+    summary: >
+      An intentional navigation or dashboard note; not a folder. Provides an
+      entry point into a major Area, subject, project family, or knowledge
+      cluster using links and dynamic queries. Existing Hubs should generally
+      be stable and self-updating via repeatable ontology structure.

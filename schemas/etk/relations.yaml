@@ -1,0 +1,29 @@
+# WATTSON ETK — typed relationships
+#
+# Human-editable source of truth for the typed-relation vocabulary.
+# Transcribed from wattson-handoff/reference/01-etk-information-model.md §6-7.
+
+version: 1
+
+# Canonical entity references are plain Obsidian [[wikilinks]]; aliases live
+# on the canonical note. No opaque entity-ID system.
+
+relations:
+  - supports
+  - contradicts
+  - cites
+  - applies-to
+  - derived-from
+  - related
+
+policy:
+  - >
+    Ordinary [[wikilinks]] are sufficient for broad semantic adjacency; use a
+    typed relationship only when the relation itself carries information.
+  - >
+    Encode relationships as visible, human-editable inline fields (e.g. a
+    "### Relations" section with `type:: [[target]]` lines), never as hidden
+    comments or novel bracket syntax.
+  - >
+    Keep the vocabulary deliberately small; add a relation type only when
+    repeated use justifies it.

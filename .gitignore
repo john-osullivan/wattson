@@ -1,11 +1,17 @@
 # env and local
 .env
 *.env
+
+# python
 __pycache__/
 *.pyc
 .venv/
 venv/
+
+# node
 node_modules/
 dist/
-# worktrees (created outside repo root, but just in case)
-worktree-*/
+
+# local application state
+*.sqlite
+*.sqlite-journal

@@ -1,11 +1,113 @@
+# WATTSON ETK — seed ontology
+#
+# Human-editable source of truth for the ETK ontology axes, seed Area tree,
+# and deterministic alias index. Phase 1 generates JSON Schema / TypeScript /
+# Zod / Pydantic contracts from this file; generated artifacts are never
+# hand-edited.
+#
+# Transcribed from:
+#   - wattson-handoff/reference/01-etk-information-model.md (axes, Area tree, tagging policy)
+#   - legacy alias index (ontology/terms.yaml at git tag archive/legacy-scaffold)
+#
+# Notes:
+#   - The exact YAML dialect is a Phase 1 implementation detail.
+#   - This tree is a SEED ontology, not a closed universe. New tags are
+#     proposal-only (Hub/Ontology Scout) and must satisfy the new-tag rule.
+#   - Reconciled against the legacy schema: #status uses `incubating`
+#     (legacy draft had `paused`); `fleeting` is a note role (see
+#     note-types.yaml), not a #type axis value.
+
 version: 1
-notes: >
-  Each term intentionally favors recall. Aliases may appear under multiple terms.
-  Matching is case/punctuation-insensitive; do substring or n-gram checks in the agent.
 
-terms:
+# --- Ontology axes ------------------------------------------------------
+# Canonical encoding: hierarchical tags (#axis/value). Frontmatter is
+# reserved for values that are naturally properties (dates, aliases,
+# bibliographic fields, WATTSON workflow state).
 
-  # ----- Brasstax (root + groups)
+axes:
+  type:
+    values: [hub, project, atom, evergreen, source]
+  status:
+    values: [active, someday, incubating, done, dropped]
+  maturity:
+    values: [seed, budding, stable]
+  horizon:
+    values:
+      - 5-purpose-principles
+      - 4-vision-goals
+      - 3-areas-of-focus
+      - 2-projects
+      - 1-current-actions
+  context:
+    values: [work, home, computer, phone]
+
+# --- Seed Area tree -----------------------------------------------------
+# Convention: a key at depth N denotes the tag #area/<path>. A node is
+# either a mapping (it has children) or a list of leaf names.
+
+areas:
+  brasstax:
+    product:
+      - credibility-models
+      - ux-design
+      - abuse-prevention
+    market:
+      - disinformation
+      - media-analysis
+      - research
+    strategy:
+      - gtm
+      - economics
+      - naming
+    philosophy:
+      - epistemology
+      - ethics
+  business:
+    - startups
+    - economics
+    - product-management
+    - venture-capital
+  career:
+    - job-search
+    - management
+    - professional-development
+  comedy:
+    - dark
+    - programming
+    - business
+    - satire
+  creative:
+    - writing
+    - design
+  personal:
+    - family
+    - friends
+    - journaling
+    - relationships
+    - travel
+  projects:
+    - chick-fil-gay
+    - johno-dev
+  society:
+    - disinformation
+    - journalism
+    - media
+    - politics
+    - sociology
+  tech:
+    - ai
+    - blockchain
+    - cybersecurity
+    - fintech
+    - programming
+
+# --- Alias index (deterministic tagging aid) ----------------------------
+# term -> aliases -> tags. Matching is case/punctuation-insensitive
+# substring matching; aliases may appear under multiple terms. This is a
+# deterministic recall aid for the Relationship & Tagging Enricher, not a
+# classifier: the semantic pass decides what applies.
+
+aliases:
   brasstax:
     aliases: ["brasstax", "brass tax", "bt"]
     tags: ["#area/brasstax"]
@@ -89,7 +191,6 @@ terms:
       - "#area/brasstax/philosophy/ethics"
       - "#area/society/politics"
 
-  # ----- Business
   business:
     aliases: ["business"]
     tags: ["#area/business"]
@@ -106,9 +207,6 @@ terms:
     aliases: ["venture capital", "vc", "fundraising"]
     tags: ["#area/business/venture-capital"]
 
-  # economics term above covers business economics
-
-  # ----- Career
   career:
     aliases: ["career"]
     tags: ["#area/career"]
@@ -125,7 +223,6 @@ terms:
     aliases: ["professional development", "career growth", "skills development"]
     tags: ["#area/career/professional-development"]
 
-  # ----- Comedy
   comedy:
     aliases: ["comedy"]
     tags: ["#area/comedy"]
@@ -152,7 +249,6 @@ terms:
       - "#area/comedy/satire"
       - "#area/society/politics"
 
-  # ----- Creative
   creative:
     aliases: ["creative"]
     tags: ["#area/creative"]
@@ -165,7 +261,6 @@ terms:
     aliases: ["design", "visual design", "graphic design"]
     tags: ["#area/creative/design"]
 
-  # ----- Personal
   personal:
     aliases: ["personal"]
     tags: ["#area/personal"]
@@ -190,7 +285,6 @@ terms:
     aliases: ["travel", "trip planning"]
     tags: ["#area/personal/travel"]
 
-  # ----- Projects
   projects:
     aliases: ["projects"]
     tags: ["#area/projects"]
@@ -203,7 +297,6 @@ terms:
     aliases: ["johno dev", "johno.dev"]
     tags: ["#area/projects/johno-dev"]
 
-  # ----- Society
   society:
     aliases: ["society", "social issues"]
     tags: ["#area/society"]
@@ -224,7 +317,6 @@ terms:
     aliases: ["sociology", "social science"]
     tags: ["#area/society/sociology"]
 
-  # ----- Tech
   tech:
     aliases: ["tech", "technology"]
     tags: ["#area/tech"]
