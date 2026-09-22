@@ -1,0 +1,49 @@
+# Phase-0 spike: full Obsidian in a container
+
+Goal (design doc `02-phased-implementation-plan.md`, Phase 0 / Milestone M0):
+prove that the Obsidian Linux desktop app runs reliably under Xvfb in a
+container, that the `obsidian` CLI registers and works against it, and that
+the GUI is viewable in a browser via noVNC. This informs the ADR choosing
+**Full Obsidian Runtime** vs **Headless Sync + WATTSON vault library**.
+
+## Layout
+
+- `Dockerfile` — ubuntu 24.04 + Electron deps + Obsidian 1.13.7 .deb + Xvfb + x11vnc + noVNC
+- `entrypoint.sh` — Xvfb :99, x11vnc :5900, noVNC :6080, then `exec obsidian`
+- `test_vault/` — fixture vault (mounted at `/data/vault`)
+- profile persisted in named volume `wattson-spike-profile` (`/root/.config/obsidian`)
+- state/logs in named volume `wattson-spike-state` (`/data/state`)
+
+## Run
+
+```sh
+just spike-build
+just spike-up
+just spike-logs
+just spike-cli     # obsidian --help inside the container
+just spike-shell
+just spike-down
+```
+
+noVNC: container port 6080; from the dev pod the user-facing preview URL is
+`https://1f47cd9b0.app.on.bigrock.dev/__preview/6080/vnc.html` (verify reachability).
+
+## Verification checklist (from the design doc)
+
+1. app launches reliably under Xvfb
+2. target test vault opens (first run: trust dialog — handle via noVNC or by
+   pre-seeding `/root/.config/obsidian/obsidian.json`)
+3. `obsidian` CLI registers and works while the app is running
+   (consult https://obsidian.md/help/cli for current subcommand syntax)
+4. `tags`, `links`, `backlinks`, `tasks`, property ops, file creation,
+   rename/move, search, and `eval` (JS against the app API / MetadataCache)
+5. process survives container restart (profile on named volume)
+6. Sync stability over days — out of scope for today; needs user credentials
+
+## Notes
+
+- Obsidian CLI requires a *running* desktop app; the CLI talks to the live
+  instance (socket in the profile dir). If the CLI binary is not on PATH,
+  inspect the .deb contents (`dpkg -L obsidian`) and the app resources.
+- No GPU in this dev pod; Electron runs with `--disable-gpu`.
+- Do not point this container at the real user vault.
