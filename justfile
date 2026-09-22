@@ -12,7 +12,7 @@ model-test:  # verify Qwen endpoint: connectivity, completion, structured JSON
 # --- Phase 0: Obsidian vault-runtime spike ------------------------------------
 
 spike-build:  # build the Obsidian-in-container spike image
-    docker build -t wattson-spike-obsidian:latest spike/obsidian
+    docker build --network=host -t wattson-spike-obsidian:latest spike/obsidian
 
 spike-up:  # run spike container (noVNC :6080, test vault mounted, profile persisted)
     docker rm -f wattson-spike-obsidian 2>/dev/null || true

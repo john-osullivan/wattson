@@ -1,0 +1,3 @@
+workloads:
+  wattson:
+    replicaCount: 1

@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wattson
+  namespace: '{{ .Release.Namespace }}'
+  labels:
+    io.kompose.service: wattson
+spec:
+  replicas: {{ .Values.workloads.wattson.replicaCount }}
+  selector:
+    matchLabels:
+      io.kompose.service: wattson
+  # hostPath userspace mounts are incompatible with rolling updates
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: wattson
+    spec:
+      enableServiceLinks: false
+      restartPolicy: Always
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      initContainers:
+      # appData hostPath root (and subPath dirs) are created root-owned;
+      # the app runs as uid 1000, so prepare vault/ state/ config/ non-recursively.
+      - name: init-permissions
+        image: beclab/aboveos-busybox:1.37.0
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          for d in /data /data/vault /data/state /data/config; do
+            mkdir -p "$d" && chown 1000:1000 "$d"
+          done
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: app-data
+          mountPath: /data
+      containers:
+      - name: wattson
+        image: alpine:3.20
+        command:
+        - sh
+        - -c
+        - |
+          set -eu
+          n=$(cat /data/state/restart-count 2>/dev/null || echo 0)
+          n=$((n + 1))
+          echo "$n" > /data/state/restart-count
+          echo "[wattson] container start #$n"
+          seq=0
+          while true; do
+            seq=$((seq + 1))
+            ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            echo "[wattson] heartbeat seq=$seq ts=$ts model_base_url=$WATTSON_MODEL_BASE_URL model_name=$WATTSON_MODEL_NAME"
+            printf 'last_heartbeat=%s\n' "$ts" > /data/state/heartbeat
+            echo "$ts" >> /data/state/heartbeat.log
+            sleep 5
+          done
+        env:
+        - name: WATTSON_MODEL_BASE_URL
+          value: "{{ .Values.olaresEnv.WATTSON_MODEL_BASE_URL }}"
+        - name: WATTSON_MODEL_NAME
+          value: "{{ .Values.olaresEnv.WATTSON_MODEL_NAME }}"
+        volumeMounts:
+        - name: app-data
+          mountPath: /data
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+      volumes:
+      - name: app-data
+        hostPath:
+          path: {{ .Values.userspace.appData }}
+          type: DirectoryOrCreate

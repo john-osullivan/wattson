@@ -1,0 +1,5 @@
+apiVersion: v2
+name: wattson
+description: WATTSON Phase 0 test skeleton - heartbeat container with persisted app data
+version: 0.0.1
+appVersion: "0.0.1"
