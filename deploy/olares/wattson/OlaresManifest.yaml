@@ -29,6 +29,13 @@ options:
     type: system
 workloadReplicas:
   wattson: 1
+  terminal: 1
+entrances:
+- name: terminal
+  host: terminal
+  port: 80
+  title: WATTSON Terminal
+  openMethod: window
 envs:
 # Local inference backend: the shared app `llamacppqwen3827bggufv3`
 # (llama.cpp serving Qwen3.8-27B, OpenAI-compatible /v1) runs in the

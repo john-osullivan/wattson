@@ -15,3 +15,6 @@ dist/
 # local application state
 *.sqlite
 *.sqlite-journal
+
+# obsidian runtime artifacts inside the spike fixture vault
+spike/obsidian/test_vault/.obsidian/
