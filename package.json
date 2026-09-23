@@ -1,0 +1,26 @@
+{
+  "name": "wattson",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "generate": "tsx tools/generate.ts",
+    "check-generated": "tsx tools/generate.ts --check",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/"
+  },
+  "dependencies": {
+    "knap": "0.6.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ajv": "^8.20.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "yaml": "^2.9.1"
+  }
+}

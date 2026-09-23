@@ -1,0 +1,63 @@
+# WATTSON ETK — proposal envelope
+#
+# Human-editable source of truth for the proposal envelope: the container
+# that carries semantic output from a source note to human review. Phase 1
+# freezes the shape only; Phase 2 (Bootstrapper) produces these objects and
+# the review workflow transitions `status`.
+#
+# Dialect reference: README.md in this directory.
+#
+# Lifecycle: wattson-handoff/reference/06-decisions-open-questions.md §6 —
+#   generated → pending_review → accepted | accepted_with_edits | rejected
+#               | deferred
+# Finalization (accepted / accepted_with_edits) writes the durable note.
+
+version: 1
+
+proposal_source:
+  description: Identity of the note that produced the proposals.
+  fields:
+    path:
+      type: string
+      required: true
+      description: Vault-relative path of the source note.
+    fingerprint:
+      type: string
+      required: true
+      pattern: '^[0-9a-f]{16,64}$'
+      description: >
+        Lowercase hex hash of the source content at processing time; the
+        idempotency key that prevents duplicate proposal storms on re-
+        processing.
+
+proposal:
+  description: One proposed note plus its lifecycle state.
+  fields:
+    proposalId:
+      type: string
+      required: true
+      pattern: '^[a-z0-9][a-z0-9-]{0,63}$'
+      description: >
+        Stable unique identifier for the proposal (e.g.
+        <fingerprint-prefix>-<sequence>).
+    status:
+      type: enum
+      required: true
+      values: [generated, pending_review, accepted, accepted_with_edits, rejected, deferred]
+      description: Lifecycle state of the proposal.
+    note:
+      type: note
+      required: true
+      description: The ETK note this proposal would create (notes.yaml).
+
+proposal_envelope:
+  description: A source note plus every proposal it produced.
+  fields:
+    source:
+      type: proposal_source
+      required: true
+    proposals:
+      type: list
+      item: proposal
+      required: true
+      min_items: 1

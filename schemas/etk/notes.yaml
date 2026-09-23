@@ -1,0 +1,159 @@
+# WATTSON ETK — structured note contract
+#
+# Human-editable source of truth for the ETK note object: the typed
+# structure that semantic output (model or orchestrator) produces and that
+# Knap templates render into durable Markdown. This is the single typed
+# boundary between AI output and the vault (design:
+# wattson-handoff/reference/02-contracts-and-rendering.md §1, §6).
+#
+# Dialect reference: README.md in this directory.
+#
+# Transcribed from:
+#   - wattson-handoff/reference/02-contracts-and-rendering.md §6 (shape)
+#   - wattson-handoff/reference/01-etk-information-model.md §2/§6/§7
+#     (roles, canonical links, typed relations)
+#   - note-types.yaml (role semantics)
+#
+# Machine-readable companions:
+#   - ontology.yaml  → tag enum for `type: tags`
+#   - relations.yaml → relation-type enum for `type: relations`
+#
+# `fleeting` is a capture role (note-types.yaml) and deliberately has no
+# render contract here: fleeting content stays in Daily Notes/Inbox until
+# the semantic pipeline decides what it becomes.
+
+version: 1
+
+note:
+  description: >
+    A structured ETK note ready for deterministic rendering. Members are
+    discriminated by `noteType`; every member carries the base fields plus
+    its own extras.
+  discriminator: noteType
+  base_fields:
+    title:
+      type: string
+      required: true
+      render: body
+      min_length: 1
+      max_length: 120
+      description: >
+        Declarative title stating the note's concept or subject in the
+        user's voice, not a fragment of the source text.
+    body:
+      type: string
+      required: true
+      render: body
+      min_length: 1
+      description: >
+        Note content in Markdown. Preserves the user's substance; layout
+        conventions come from the template, not this field.
+    tags:
+      type: tags
+      required: true
+      render: frontmatter
+      min_items: 1
+      max_items: 40
+      unique_items: true
+      sort_items: true
+      include_tag: "type/{noteType}"
+      description: >
+        Established ontology tags (axis/value, see ontology.yaml). Must
+        include the note's own type tag. Comprehensive, not maximal: every
+        tag that materially applies, none that don't.
+    links:
+      type: links
+      required: false
+      render: body
+      max_items: 50
+      unique_items: true
+      description: >
+        Plain wikilink targets (bare note names, no brackets) for semantic
+        adjacency. Typed meaning goes in `relations`, not here.
+    relations:
+      type: relations
+      required: false
+      render: body
+      max_items: 50
+      unique_items: true
+      description: >
+        Typed relationships from the relations.yaml vocabulary, used only
+        when the relation itself carries information.
+    aliases:
+      type: string_list
+      required: false
+      render: frontmatter
+      max_items: 20
+      description: >
+        Alternate names by which the canonical entity is known; Obsidian
+        resolves [[aliases]] to this note.
+    created:
+      type: date
+      required: true
+      render: frontmatter
+      description: >
+        Date (YYYY-MM-DD) the note entered the durable corpus.
+  members:
+    atom:
+      description: >
+        One meaningful, independently linkable concept. No extras:
+        synthesis, sources, and navigation belong to other note types.
+      fields: {}
+    evergreen:
+      description: >
+        Durable synthesis integrating multiple atoms or pieces of
+        evidence. Create conservatively; the synthesis lives in `body`.
+      fields: {}
+    project:
+      description: >
+        A desired outcome requiring multiple actions. Status and horizon
+        live in `tags` (#status/..., #horizon/...).
+      fields:
+        due:
+          type: date
+          required: false
+          render: frontmatter
+          description: Commitment date (YYYY-MM-DD), if the project has one.
+        tasks:
+          type: tasks
+          required: false
+          render: body
+          max_items: 100
+          description: Next actions / task list for the project.
+    source:
+      description: >
+        External source material, kept separate from the user's durable
+        ideas. Bibliographic fields go to frontmatter.
+      fields:
+        kind:
+          type: enum
+          required: true
+          render: frontmatter
+          values: [article, book, pdf, video, website, paper]
+          description: Source kind.
+        author:
+          type: string
+          required: false
+          render: frontmatter
+          max_length: 200
+          description: Author or creator, if known.
+        url:
+          type: uri
+          required: false
+          render: frontmatter
+          description: Canonical URL (http/https), if the source has one.
+        published:
+          type: date
+          required: false
+          render: frontmatter
+          description: Publication date (YYYY-MM-DD), if known.
+        excerpt:
+          type: string
+          required: false
+          render: body
+          description: A short verbatim excerpt worth preserving.
+    hub:
+      description: >
+        An intentional navigation/dashboard entry point. Structure and
+        dynamic queries live in `body`; member notes in `links`.
+      fields: {}
