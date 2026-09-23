@@ -24,12 +24,16 @@ RUN wget -q "https://github.com/obsidianmd/obsidian-releases/releases/download/v
     && rm -f /tmp/obsidian.deb \
     && rm -rf /var/lib/apt/lists/*
 
+# App runs as the stock `ubuntu` user (uid 1000) so the bind-mounted vault is
+# writable from the host (uid 1000) and the container alike. Root is used at
+# startup only to chown mounted volumes.
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # 5900 = VNC (x11vnc), 6080 = noVNC web client
 EXPOSE 5900 6080
 
-VOLUME ["/data/vault", "/data/state", "/root/.config/obsidian"]
+VOLUME ["/data/vault", "/data/state", "/home/ubuntu/.config/obsidian"]
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
