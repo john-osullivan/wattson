@@ -18,3 +18,6 @@ dist/
 
 # obsidian runtime artifacts inside the spike fixture vault
 spike/obsidian/test_vault/.obsidian/
+
+# synced real vault data (never commit user notes)
+spike/obsidian/vault-data/

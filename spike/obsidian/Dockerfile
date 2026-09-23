@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxrandr2 libgbm1 libasound2t64 libpango-1.0-0 libcairo2 \
         libgtk-3-0t64 libxss1 libsecret-1-0 \
         dbus-x11 fontconfig fonts-liberation \
+        xdotool scrot tesseract-ocr python3-pil \
     && rm -rf /var/lib/apt/lists/*
 
 # Desktop app with the `obsidian` CLI. v1.13.7 = newest release shipping an amd64 .deb.

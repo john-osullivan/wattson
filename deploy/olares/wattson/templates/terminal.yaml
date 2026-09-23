@@ -62,6 +62,8 @@ spec:
         - --namespace={{ .Release.Namespace }}
         - --pod=bytetrade.io/terminal=wattson
         - --container=wattson
+        # wattson container is alpine (no bash); apiserver default shell is bash -> exit 127
+        - --shell=sh
         env:
         - name: POD_NAME
           valueFrom: { fieldRef: { fieldPath: metadata.name } }

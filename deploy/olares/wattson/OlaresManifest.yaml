@@ -7,11 +7,11 @@ metadata:
   title: WATTSON
   description: WATTSON Phase 0 test skeleton - heartbeat container with persisted app data and inference backend wiring.
   icon: https://app.cdn.olares.com/appstore/default/defaulticon.webp
-  version: 0.0.1
+  version: 0.0.2
   categories:
   - Utilities
 spec:
-  versionName: "0.0.1"
+  versionName: "0.0.2"
   runAsUser: true
   supportArch:
   - amd64

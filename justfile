@@ -15,10 +15,11 @@ spike-build:  # build the Obsidian-in-container spike image
     docker build --network=host -t wattson-spike-obsidian:latest spike/obsidian
 
 spike-up:  # run spike container (noVNC :6080, test vault mounted, profile persisted)
+    # --network=host: bridge egress is filtered (400 on apt AND Obsidian's sync API)
     docker rm -f wattson-spike-obsidian 2>/dev/null || true
     docker run -d --name wattson-spike-obsidian \
-        -p 6080:6080 \
-        -v "{{justfile_directory()}}/spike/obsidian/test_vault:/data/vault" \
+        --network=host \
+        -v "{{justfile_directory()}}/spike/obsidian/vault-data:/data/vault" \
         -v wattson-spike-state:/data/state \
         -v wattson-spike-profile:/root/.config/obsidian \
         wattson-spike-obsidian:latest

@@ -21,7 +21,7 @@ Proves, on this Olares host (1.12.6):
 |---|---|
 | `Chart.yaml` / `OlaresManifest.yaml` / `values.yaml` | chart metadata, manifest (storage, env, workload, entrance), replica counts |
 | `templates/wattson.yaml` | `wattson` Deployment: uid-1000 alpine heartbeat, `init-permissions` initContainer (non-recursive `chown` of `/data{,/vault,/state,/config}`), appData hostPath at `/data` |
-| `templates/terminal.yaml` | headless-archetype web terminal (RBAC + `beclab/terminal:v0.0.8`) that execs into the `wattson` container; the app's one (visible, window) entrance |
+| `templates/terminal.yaml` | headless-archetype web terminal (RBAC + `beclab/terminal:v0.0.8`) that execs into the `wattson` container; the app's one (visible, window) entrance. Runs with `--shell=sh` because the target container is alpine (no `bash`; the apiserver default shell `bash` exits 127) |
 
 ## Inference backend env (configure-only, no calls made)
 
