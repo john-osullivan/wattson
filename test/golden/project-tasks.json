@@ -1,0 +1,18 @@
+{
+  "noteType": "project",
+  "title": "Launch the scout",
+  "body": "Ship the tag-proposing scout behind a flag.",
+  "tags": ["type/project", "area/brasstax/product", "status/active"],
+  "due": "2026-10-15",
+  "tasks": [
+    { "text": "Draft the ontology-edit proposal flow", "done": true },
+    { "text": "Wire the review UI stub", "done": false },
+    { "text": "Write the Phase 5 ADR", "done": false }
+  ],
+  "links": ["Scout", "Ontology"],
+  "relations": [
+    { "type": "applies-to", "target": "Scout" }
+  ],
+  "aliases": ["Scout launch"],
+  "created": "2026-09-10"
+}

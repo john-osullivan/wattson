@@ -81,12 +81,12 @@ Defaults below are recommended; each is small to change before implementation.
   (`--- {{ fm | yaml }} ---`). With five templates this duplication is
   trivial, and each template stays self-contained and readable. Templates own
   layout; the `yaml` filter owns serialization.
-- **D5 — Generator is TypeScript**, run via `tsx`, single file
-  (`tools/generate.ts`). Rationale: Knap + Zod + the M1 command already make
-  Node the runtime language; one toolchain; emitting Pydantic/Python is plain
-  code-generation. (Alternative: Python generator — rejected to avoid a
-  second language with generators, and to keep Phase 0's stdlib-only Python
-  scripts dependency-free.)
+- **D5 — Generator is TypeScript**, run via `tsx`, split into a small
+  legible package (`tools/generate/`, one module per concern). Rationale:
+  Knap + Zod + the M1 command already make Node the runtime language; one
+  toolchain; emitting Pydantic/Python is plain code-generation. (Alternative:
+  Python generator — rejected to avoid a second language with generators, and
+  to keep Phase 0's stdlib-only Python scripts dependency-free.)
 - **D6 — Proposal envelope schema is included in Phase 1; the proposal
   template is not.** `proposal.yaml` freezes the envelope shape
   (`source {path, fingerprint}`, `proposals [{proposalId, status, note}]` with
@@ -100,8 +100,8 @@ package.json tsconfig.json        # root = the TS project (private)
 schemas/etk/*.yaml                # hand-edited sources (only these)
 schemas/etk/README.md             # field dialect reference
 schemas/generated/json-schema/    # etk-note, etk-proposal, etk-tag schemas
-tools/generate.ts                 # the generator (yaml → everything)
-src/generated/                    # types.ts, zod.ts (GENERATED)
+tools/generate/                   # generator package (yaml → everything)
+src/generated/                    # types.ts, zod.ts, render-meta.ts (GENERATED)
 src/render.ts src/cli.ts          # type-checked vars + template dispatch, M1 cmd
 templates/*.knap.md               # atom evergreen project source hub
 test/                             # golden + invalid fixtures, node:test
@@ -128,20 +128,32 @@ py/tests/ py/pyproject.toml       # Python-side checks (venv: py/.venv)
 
 ### W2 — Contract generator
 
-`tools/generate.ts` (deps: `yaml` for parsing; no other generator libraries):
+`tools/generate/` (deps: `yaml` for parsing; no other generator libraries).
+One module per concern, so each step stays legible:
 
-- reads the five `schemas/etk/*.yaml`;
-- derives the tag enum: axis values → `axis/value`; Area tree walk →
-  `area/<path>` for every node and leaf;
-- emits, with `GENERATED — do not edit` banners and fixed key order:
-  - `schemas/generated/json-schema/{etk-note,etk-proposal,etk-tag}.schema.json`
-    (draft 2020-12);
-  - `src/generated/types.ts`, `src/generated/zod.ts` (discriminated unions,
-    `extra: "forbid"` / `strict`);
-  - `py/wattson/etk/generated/models.py` (Pydantic v2, discriminated union,
-    `model_config = ConfigDict(extra="forbid")`);
-- flags: `--out <dir>` (redirect all output; used by `--check`), `--check`
-  (regenerate to temp, diff, exit 1 on drift);
+- `sources.ts` — the only layer that reads `schemas/etk/`; derives the closed
+  tag enum (axis values → `axis/value`; Area-tree walk → `area/<path>` for
+  every node and leaf) and the relation/alias vocabularies.
+- `dialect.ts` — the fail-closed interpreter: maps the YAML field dialect to a
+  small IR (`Contract`) and throws `DialectError` on any violation; provides
+  `topoSort` for dependency-ordered emission.
+- `emitJsonSchema.ts` / `emitTypescript.ts` / `emitZod.ts` /
+  `emitRenderMeta.ts` / `emitPydantic.ts` — one emitter per artifact.
+- `common.ts` — dependency-free naming/text helpers shared by the emitters.
+- `index.ts` — CLI entry: builds the seven artifacts in memory, then either
+  writes them or (with `--check`) diffs against the committed files.
+
+Each emitter, with `GENERATED — do not edit` banners and fixed key order,
+produces:
+
+- `schemas/generated/json-schema/{etk-note,etk-proposal,etk-tag}.schema.json`
+  (draft 2020-12);
+- `src/generated/types.ts`, `src/generated/zod.ts`,
+  `src/generated/render-meta.ts` (discriminated unions, `strict`);
+- `py/wattson/etk/generated/models.py` (Pydantic v2, discriminated union,
+  `model_config = ConfigDict(extra="forbid")`);
+- flags: `--out <dir>` (redirect all output), `--check`
+  (regenerate in memory, diff, exit 1 on drift);
 - deterministic output: stable key order, 2-space indent, trailing newline,
   no timestamps.
 

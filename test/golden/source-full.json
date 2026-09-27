@@ -1,0 +1,17 @@
+{
+  "noteType": "source",
+  "title": "The Truth Machine",
+  "body": "A history of how the internet turned fact-checking into a product.",
+  "tags": ["type/source", "area/society/journalism", "area/tech/ai"],
+  "kind": "book",
+  "author": "Jane Doe",
+  "url": "https://example.com/truth-machine",
+  "published": "2024-03-11",
+  "excerpt": "The algorithm does not care if you are right; it cares if you stay.",
+  "links": ["Media literacy"],
+  "relations": [
+    { "type": "cites", "target": "Media literacy" }
+  ],
+  "aliases": ["Truth Machine"],
+  "created": "2026-09-12"
+}

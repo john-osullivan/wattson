@@ -1,0 +1,11 @@
+{
+  "noteType": "hub",
+  "title": "Media & Disinformation hub",
+  "body": "Navigation note for the media and disinformation area.",
+  "tags": ["type/hub", "area/society/media", "area/society/disinformation"],
+  "links": ["Media literacy", "The Truth Machine"],
+  "relations": [
+    { "type": "related", "target": "Media literacy" }
+  ],
+  "created": "2026-09-05"
+}

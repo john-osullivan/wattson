@@ -7,10 +7,10 @@
     "node": ">=20"
   },
   "scripts": {
-    "generate": "tsx tools/generate.ts",
-    "check-generated": "tsx tools/generate.ts --check",
+    "generate": "tsx tools/generate/index.ts",
+    "check-generated": "tsx tools/generate/index.ts --check",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/"
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
     "knap": "0.6.0",

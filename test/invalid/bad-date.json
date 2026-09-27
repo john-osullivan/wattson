@@ -1,0 +1,7 @@
+{
+  "noteType": "atom",
+  "title": "Bad date",
+  "body": "Created is not YYYY-MM-DD.",
+  "tags": ["type/atom"],
+  "created": "23/09/2026"
+}

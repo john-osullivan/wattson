@@ -6,7 +6,9 @@ maintenance layer over a durable Markdown knowledge graph: capture stays
 low-friction (Daily Notes), and the system performs the semantic work of
 turning raw material into structured, linked, tagged knowledge.
 
-**Status: design baseline only. No implementation exists yet.**
+**Status: Phase 1 (M1) implemented.** The ETK contracts are frozen and
+deterministic Knap rendering is proven end-to-end. The design baseline, the
+Phase 0 vault-runtime spike (ADR 0001), and Phase 1 all live in this repo.
 
 ## Design baseline
 
@@ -29,9 +31,29 @@ handoff reference documents:
 - `ontology.yaml` — ontology axes, seed Area tree, deterministic alias index
 - `note-types.yaml` — note roles (fleeting, atom, evergreen, project, source, hub)
 - `relations.yaml` — typed-relation vocabulary and encoding policy
+- `notes.yaml` — the structured note contract (discriminated union, per D2/D3)
+- `proposal.yaml` — the proposal envelope (per D6)
 
 These are the only hand-edited schema sources. Generated contracts (JSON
-Schema, TypeScript, Zod, Pydantic) will derive from them in Phase 1.
+Schema, TypeScript, Zod, Pydantic) derive from them; regenerate with
+`just generate`, verify with `just check-generated`.
+
+## Quickstart (Phase 1)
+
+Prereqs: Node 20+, `just`, `python3`. The Python side uses an isolated venv
+(`just py-setup` creates `py/.venv`).
+
+```sh
+just generate      # YAML -> JSON Schema + TS types + Zod + Pydantic
+just test          # node:test (golden+invalid+schema) + python tests
+just typecheck     # tsc --noEmit
+just render test/golden/atom-minimal.json        # M1 command, prints Markdown
+just render test/golden/source-full.json -o /tmp/n.md   # write to a file
+```
+
+The M1 command validates the note (Zod, fail-closed) then renders it through
+the matching Knap template. Invalid notes are rejected before anything is
+written — `just render` prints the structured issue and exits non-zero.
 
 ## Repository state
 
@@ -42,12 +64,16 @@ implements the pre-handoff architecture that the design pack supersedes.
 
 ## Next steps
 
-Per the phased plan, implementation starts at:
+Per the phased plan:
 
-- **Phase 0** — Olares development/runtime foundation + vault-runtime spike
-  (full Obsidian in a container vs `obsidian-headless`; decision M0)
-- **Phase 1** — freeze ETK contracts and deterministic Knap rendering (M1)
+- **Phase 0** — DONE. Olares development/runtime foundation + vault-runtime
+  spike (full Obsidian in a container; decision ADR 0001).
+- **Phase 1** — DONE. ETK contracts frozen and deterministic Knap rendering
+  proven (ADR 0002).
+- **Phase 2** — next: proposal review workflow and the processing pipeline
+  that turns raw material into proposal envelopes.
 
 See `wattson-handoff/02-phased-implementation-plan.md` for work items and
-exit criteria. Each phase exists to resolve one uncertainty; do not start a
-later phase before the preceding exit criteria are met.
+exit criteria, and `docs/plans/phase-1-etk-contracts.md` for the Phase 1 plan.
+Each phase exists to resolve one uncertainty; do not start a later phase
+before the preceding exit criteria are met.

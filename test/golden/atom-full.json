@@ -1,0 +1,13 @@
+{
+  "noteType": "atom",
+  "title": "Steel-man first",
+  "body": "Argue the strongest form of the opposing view before critiquing it.\n\nSecond paragraph for length.",
+  "tags": ["type/atom", "area/brasstax/philosophy/epistemology", "area/society/disinformation"],
+  "links": ["Media literacy", "Sourcing"],
+  "relations": [
+    { "type": "supports", "target": "Media literacy" },
+    { "type": "derived-from", "target": "Charity of interpretation" }
+  ],
+  "aliases": ["Steel manning", "Charitable reading"],
+  "created": "2026-09-23"
+}

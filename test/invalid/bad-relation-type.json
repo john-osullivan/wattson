@@ -1,0 +1,8 @@
+{
+  "noteType": "atom",
+  "title": "Bad relation type",
+  "body": "Relation uses a type outside the vocabulary.",
+  "tags": ["type/atom"],
+  "relations": [{ "type": "invalid", "target": "Foo" }],
+  "created": "2026-09-23"
+}

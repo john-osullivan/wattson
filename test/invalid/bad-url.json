@@ -1,0 +1,9 @@
+{
+  "noteType": "source",
+  "title": "Bad URL",
+  "body": "Source URL is not http/https.",
+  "tags": ["type/source"],
+  "kind": "article",
+  "url": "ftp://example.com",
+  "created": "2026-09-23"
+}

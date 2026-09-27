@@ -53,7 +53,42 @@ digest-watch:  # start background 30s poller; runs a digest when a marker note a
 digest-stop:  # stop the digest watcher
 	@pid=$(cat /tmp/wattson-digest-watch.pid 2>/dev/null); if [ -n "$pid" ] && kill "$pid" 2>/dev/null; then echo "digest watcher stopped"; fi; rm -f /tmp/wattson-digest-watch.pid
 
-# --- Phase 1 (planned) ----------------------------------------------------------
-# schemas:         # ETK YAML -> JSON Schema -> TS/Zod/Pydantic
-# types:           # regenerate language contracts
-# check-generated: # fail if committed generated contracts are stale
+# --- Phase 1: ETK contracts + deterministic rendering -------------------------
+
+generate:  # ETK YAML -> all generated contracts (JSON Schema + TS/Zod/Pydantic)
+	@npm run generate
+
+schemas:  # regenerate JSON Schema only
+	@npm run generate -- --only schemas
+
+types:  # regenerate language contracts (TS/Zod/Pydantic) only
+	@npm run generate -- --only types
+
+check-generated:  # fail if committed generated contracts are stale
+	@npm run check-generated
+
+typecheck:  # tsc --noEmit
+	@npm run typecheck
+
+test:  # node:test (golden+invalid+schema) + python tests
+	@just test-node
+	@just test-py
+
+test-node:  # node:test golden + invalid + schema cross-check
+	@npm test
+
+test-py:  # python (pydantic) tests under py/.venv
+	@just py-setup-ensure
+	cd py && ./.venv/bin/python -m pytest tests -q
+
+py-setup:  # (re)create py/.venv + install dev deps
+	rm -rf py/.venv
+	python3 -m venv py/.venv
+	py/.venv/bin/python -m pip install --upgrade pip
+	py/.venv/bin/python -m pip install -e "py[dev]"
+
+py-setup-ensure:  # no-op if py/.venv exists, else run just py-setup
+	@if [ -x py/.venv/bin/python ]; then echo "py/.venv present"; else just py-setup; fi
+
+render *args:  # M1 command: just render <note.json> [-o out.md]
+	@npx tsx src/cli.ts render {{args}}
