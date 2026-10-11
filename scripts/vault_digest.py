@@ -164,7 +164,7 @@ def render_digest(vault, stamp, trigger, sync_sha, added, modified, deleted, ren
 
 def main():
     ap = argparse.ArgumentParser(description="Run a structural WATTSON vault digest.")
-    ap.add_argument("--vault", default="spike/obsidian/vault-data")
+    ap.add_argument("--vault", default="vault-runtime/vault-data")
     ap.add_argument("--request", help="marker filename (without .md); default: newest pending marker")
     ap.add_argument("--quiet", action="store_true", help="exit silently when no marker is pending")
     args = ap.parse_args()

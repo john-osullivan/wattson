@@ -9,46 +9,46 @@ default:
 model-test:  # verify Qwen endpoint: connectivity, completion, structured JSON
     python3 scripts/model_test.py
 
-# --- Phase 0: Obsidian vault-runtime spike ------------------------------------
+# --- Vault runtime: full Obsidian in a container (ADR 0001) ---------------------
 
-spike-build:  # build the Obsidian-in-container spike image
-    docker build --network=host -t wattson-spike-obsidian:latest spike/obsidian
+vault-build:  # build the vault-runtime image
+    docker build --network=host -t wattson-vault-obsidian:latest vault-runtime
 
-spike-up:  # run spike container (noVNC :6080, test vault mounted, profile persisted)
+vault-up:  # run the vault-runtime container (noVNC :6080, vault mounted, profile persisted)
     # --network=host: bridge egress is filtered (400 on apt AND Obsidian's sync API)
-    docker rm -f wattson-spike-obsidian 2>/dev/null || true
-    docker run -d --name wattson-spike-obsidian \
+    docker rm -f wattson-vault-obsidian 2>/dev/null || true
+    docker run -d --name wattson-vault-obsidian \
         --network=host \
-        -v "{{justfile_directory()}}/spike/obsidian/vault-data:/data/vault" \
-        -v wattson-spike-state:/data/state \
-        -v wattson-spike-profile:/home/ubuntu/.config/obsidian \
-        wattson-spike-obsidian:latest
+        -v "{{justfile_directory()}}/vault-runtime/vault-data:/data/vault" \
+        -v wattson-vault-state:/data/state \
+        -v wattson-vault-profile:/home/ubuntu/.config/obsidian \
+        wattson-vault-obsidian:latest
 
-spike-logs:  # tail spike container logs
-    docker logs --tail 120 wattson-spike-obsidian
+vault-logs:  # tail vault-runtime container logs
+    docker logs --tail 120 wattson-vault-obsidian
 
-spike-shell:  # shell inside the spike container
-    docker exec -it wattson-spike-obsidian bash
+vault-shell:  # shell inside the vault-runtime container
+    docker exec -it wattson-vault-obsidian bash
 
-# --- Phase 0: Obsidian CLI -------------------------------------------------------
+# --- Vault runtime: Obsidian CLI -------------------------------------------------
 # The CLI is the Electron binary itself; the app-side "command line interface"
 # toggle must be enabled (socket: ~/.obsidian-cli.sock). --no-sandbox is required:
 # this container blocks unprivileged namespaces, so Chromium's zygote crashes
 # without it (the GUI gets the same flag from entrypoint.sh).
 
-spike-cli *args:  # run the Obsidian CLI: just spike-cli sync:status (avoid single quotes in args)
-	docker exec -e CLI_ARGS='{{args}}' -u ubuntu -e DISPLAY=:99 wattson-spike-obsidian bash -c 'obsidian --no-sandbox --disable-gpu --disable-dev-shm-usage $CLI_ARGS'
+vault-cli *args:  # run the Obsidian CLI: just vault-cli sync:status (avoid single quotes in args)
+	docker exec -e CLI_ARGS='{{args}}' -u ubuntu -e DISPLAY=:99 wattson-vault-obsidian bash -c 'obsidian --no-sandbox --disable-gpu --disable-dev-shm-usage $CLI_ARGS'
 
-spike-down:  # stop and remove the spike container
-    docker rm -f wattson-spike-obsidian || true
+vault-down:  # stop and remove the vault-runtime container
+    docker rm -f wattson-vault-obsidian || true
 
 # --- Phase 0: vault digest (structural, marker-triggered) ----------------------
 
 digest:  # run vault digest now (newest pending marker, or manual stamp)
-	python3 scripts/vault_digest.py --vault {{justfile_directory()}}/spike/obsidian/vault-data
+	python3 scripts/vault_digest.py --vault {{justfile_directory()}}/vault-runtime/vault-data
 
 digest-watch:  # start background 30s poller; runs a digest when a marker note appears in 99_Machine/digest/requests/
-	@if [ -f /tmp/wattson-digest-watch.pid ] && kill -0 "$(cat /tmp/wattson-digest-watch.pid)" 2>/dev/null; then echo "digest watcher already running (pid $(cat /tmp/wattson-digest-watch.pid))"; else nohup bash -c 'while true; do python3 "{{justfile_directory()}}/scripts/vault_digest.py" --vault "{{justfile_directory()}}/spike/obsidian/vault-data" --quiet; sleep 30; done' >> "{{justfile_directory()}}/spike/obsidian/digest-watch.log" 2>&1 & echo $! > /tmp/wattson-digest-watch.pid; echo "digest watcher started (pid $(cat /tmp/wattson-digest-watch.pid), log: spike/obsidian/digest-watch.log)"; fi
+	@if [ -f /tmp/wattson-digest-watch.pid ] && kill -0 "$(cat /tmp/wattson-digest-watch.pid)" 2>/dev/null; then echo "digest watcher already running (pid $(cat /tmp/wattson-digest-watch.pid))"; else nohup bash -c 'while true; do python3 "{{justfile_directory()}}/scripts/vault_digest.py" --vault "{{justfile_directory()}}/vault-runtime/vault-data" --quiet; sleep 30; done' >> "{{justfile_directory()}}/vault-runtime/digest-watch.log" 2>&1 & echo $! > /tmp/wattson-digest-watch.pid; echo "digest watcher started (pid $(cat /tmp/wattson-digest-watch.pid), log: vault-runtime/digest-watch.log)"; fi
 
 digest-stop:  # stop the digest watcher
 	@pid=$(cat /tmp/wattson-digest-watch.pid 2>/dev/null); if [ -n "$pid" ] && kill "$pid" 2>/dev/null; then echo "digest watcher stopped"; fi; rm -f /tmp/wattson-digest-watch.pid

@@ -1,4 +1,4 @@
-# WATTSON Phase-0 spike: full Obsidian desktop in a container under Xvfb.
+# WATTSON vault runtime (ADR 0001): full Obsidian desktop in a container under Xvfb.
 # Iteration speed over minimalism; not a production image.
 FROM ubuntu:24.04
 

@@ -21,7 +21,8 @@ WATTSON code targets the narrow Vault Runtime interface.
 
 ## Evidence (spike, 2026-09-22)
 
-Scaffold: `spike/obsidian/` (Dockerfile, entrypoint, test vault, noVNC).
+Scaffold: `vault-runtime/` (Dockerfile, entrypoint, test vault, noVNC;
+renamed from `spike/obsidian/` on 2026-09-27 once Phase 0 validated it).
 Image: ubuntu:24.04 + Obsidian 1.13.7 .deb + Xvfb + x11vnc + noVNC.
 
 | Check | Result |
@@ -52,9 +53,12 @@ would require WATTSON to reimplement exactly this semantics layer.
    possibly hybrid (Headless Sync for transport + full app for semantics,
    which the design permits since only one Sync mechanism may touch a vault
    at a time).
-2. **Multi-day stability unproven.** Leave the spike (or successor) running
-   through Phase 1; a crash loop or silent Sync stall re-opens the decision.
-3. Operational rules captured from the spike:
+2. **Multi-day stability unproven.** Leave the vault runtime (or successor)
+   running through Phase 1; a crash loop or silent Sync stall re-opens the
+   decision. (The container was recreated on 2026-09-27 when the spike was
+   renamed to the stable `vault-runtime/` component; the uptime observation
+   restarted then.)
+3. Operational rules captured from the Phase 0 spike:
    - docker builds on this pod need `--network=host` (bridge egress filtered);
    - Obsidian + CLI as root need `--no-sandbox`;
    - entrypoint must clear stale `/tmp/.X99-lock` before starting Xvfb;
@@ -66,7 +70,7 @@ would require WATTSON to reimplement exactly this semantics layer.
    `{"data":{}}` — use `resolvedLinks`; `getTags()` returns a tag→count map.
    Prefer CLI subcommands over `eval` where they exist; treat `eval` as the
    escape hatch.
-5. The spike's noVNC/nginx prefix-strip setup is the pattern for any
+5. The runtime's noVNC/nginx prefix-strip setup is the pattern for any
    browser-visible surface behind the pod preview proxy.
 
 ## Consequences

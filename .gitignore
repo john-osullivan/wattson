@@ -16,9 +16,9 @@ dist/
 *.sqlite
 *.sqlite-journal
 
-# obsidian runtime artifacts inside the spike fixture vault
-spike/obsidian/test_vault/.obsidian/
+# obsidian runtime artifacts inside the vault-runtime fixture vault
+vault-runtime/test_vault/.obsidian/
 
 # synced real vault data (never commit user notes)
-spike/obsidian/vault-data/
-spike/obsidian/digest-watch.log
+vault-runtime/vault-data/
+vault-runtime/digest-watch.log

@@ -8,7 +8,7 @@ turning raw material into structured, linked, tagged knowledge.
 
 **Status: Phase 1 (M1) implemented.** The ETK contracts are frozen and
 deterministic Knap rendering is proven end-to-end. The design baseline, the
-Phase 0 vault-runtime spike (ADR 0001), and Phase 1 all live in this repo.
+Phase 0 vault runtime (ADR 0001), and Phase 1 all live in this repo.
 
 ## Design baseline
 
@@ -66,8 +66,8 @@ implements the pre-handoff architecture that the design pack supersedes.
 
 Per the phased plan:
 
-- **Phase 0** — DONE. Olares development/runtime foundation + vault-runtime
-  spike (full Obsidian in a container; decision ADR 0001).
+- **Phase 0** — DONE. Olares development/runtime foundation + vault runtime
+  (full Obsidian in a container, `vault-runtime/`; decision ADR 0001).
 - **Phase 1** — DONE. ETK contracts frozen and deterministic Knap rendering
   proven (ADR 0002).
 - **Phase 2** — next: proposal review workflow and the processing pipeline
