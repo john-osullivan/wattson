@@ -17,6 +17,9 @@ const CASES: Array<{ file: string; path: string; messageIncludes: string }> = [
   { file: "unknown-note-type.json", path: "noteType", messageIncludes: "Invalid discriminator value" },
   { file: "extra-field.json", path: "(root)", messageIncludes: "Unrecognized key" },
   { file: "bad-url.json", path: "url", messageIncludes: "must match pattern" },
+  { file: "wrong-type-tag.json", path: "tags", messageIncludes: "tags must include type/project" },
+  { file: "duplicate-relation.json", path: "relations", messageIncludes: "items must be unique" },
+  { file: "duplicate-tag.json", path: "tags", messageIncludes: "items must be unique" },
 ];
 
 test("invalid fixtures fail validation with the expected issue", async (t) => {

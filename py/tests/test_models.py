@@ -4,13 +4,15 @@ from pathlib import Path
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from wattson.etk.generated.models import EtkNote
+from wattson.etk.generated.models import EtkNote, EtkProposalEnvelope
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GOLDEN_DIR = REPO_ROOT / "test" / "golden"
 INVALID_DIR = REPO_ROOT / "test" / "invalid"
+PROPOSAL_DIR = REPO_ROOT / "test" / "proposal"
 
 note_adapter = TypeAdapter(EtkNote)
+proposal_adapter = TypeAdapter(EtkProposalEnvelope)
 
 
 def _golden_files():
@@ -38,3 +40,18 @@ def test_invalid_fixture_rejected(path: Path):
     data = json.loads(path.read_text())
     with pytest.raises(ValidationError):
         note_adapter.validate_python(data)
+
+
+def test_proposal_envelope_accepted():
+    data = json.loads((PROPOSAL_DIR / "envelope-valid.json").read_text())
+    envelope = proposal_adapter.validate_python(data)
+    assert len(envelope.proposals) == 2
+    assert envelope.proposals[0].status == "pending_review"
+    assert envelope.proposals[0].note.noteType == "atom"
+    assert envelope.proposals[1].note.kind == "video"
+
+
+def test_proposal_envelope_invalid_rejected():
+    data = json.loads((PROPOSAL_DIR / "envelope-invalid.json").read_text())
+    with pytest.raises(ValidationError):
+        proposal_adapter.validate_python(data)

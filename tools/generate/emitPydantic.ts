@@ -2,9 +2,9 @@
 // mirror of the Contract. `list[EtkTag]` enforces the closed tag enum per item;
 // the note union is a shared-base discriminated union.
 //
-// Fidelity (v1): list `unique_items` and per-item patterns are carried by the
-// JSON Schema and Zod layers only. Pydantic mirrors types plus length, pattern,
-// and enum constraints, not item-uniqueness.
+// Fidelity (v1): list `unique_items` is enforced everywhere via a deep-equality
+// `AfterValidator`; Pydantic still does not mirror `item_pattern` (string
+// element regexes), which stays in the JSON Schema and Zod layers.
 
 import type { Contract, Field, NamedType } from "./dialect.js";
 import { topoSort } from "./dialect.js";
@@ -12,30 +12,43 @@ import { banner, oneLine, pascal, typeName } from "./common.js";
 
 /** Map one IR field to a Python type expression. */
 function pyType(f: Field): string {
+  let base: string;
   switch (f.kind) {
     case "string":
     case "date":
     case "uri":
-      return "str";
+      base = "str";
+      break;
     case "boolean":
-      return "bool";
+      base = "bool";
+      break;
     case "enum":
-      return `Literal[${f.values!.map((v) => JSON.stringify(v)).join(", ")}]`;
+      base = `Literal[${f.values!.map((v) => JSON.stringify(v)).join(", ")}]`;
+      break;
     case "string_list":
-      return "list[str]";
+      base = "list[str]";
+      break;
     case "tags":
-      return "list[EtkTag]";
+      base = "list[EtkTag]";
+      break;
     case "links":
-      return "list[str]";
+      base = "list[str]";
+      break;
     case "relations":
-      return "list[EtkRelation]";
+      base = "list[EtkRelation]";
+      break;
     case "tasks":
-      return "list[EtkTask]";
+      base = "list[EtkTask]";
+      break;
     case "list":
-      return `list[${typeName(f.itemRef!)}]`;
+      base = `list[${typeName(f.itemRef!)}]`;
+      break;
     case "ref":
-      return typeName(f.rawType);
+      base = typeName(f.rawType);
+      break;
   }
+  if (f.uniqueItems) return `Annotated[${base}, AfterValidator(_unique_items)]`;
+  return base;
 }
 
 /** A Python raw-string regex literal: r"..." (r'...' if it holds a quote). */
@@ -135,9 +148,18 @@ export function emitPydantic(c: Contract): string {
     ``,
     `from typing import Annotated, Literal, Union`,
     ``,
-    `from pydantic import BaseModel, ConfigDict, Field, model_validator`,
+    `from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator`,
     ``,
     `ETK_VERSION = ${c.version}`,
+    ``,
+    `def _unique_items(values: list[object]) -> list[object]:`,
+    `    """Reject duplicate list elements (deep equality) per unique_items."""`,
+    `    seen: list[object] = []`,
+    `    for value in values:`,
+    `        if value in seen:`,
+    `            raise ValueError("items must be unique")`,
+    `        seen.append(value)`,
+    `    return values`,
     ``,
   ];
 

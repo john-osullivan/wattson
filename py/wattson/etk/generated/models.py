@@ -6,9 +6,18 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 ETK_VERSION = 1
+
+def _unique_items(values: list[object]) -> list[object]:
+    """Reject duplicate list elements (deep equality) per unique_items."""
+    seen: list[object] = []
+    for value in values:
+        if value in seen:
+            raise ValueError("items must be unique")
+        seen.append(value)
+    return values
 
 EtkTag = Literal[
     "area/brasstax",
@@ -106,9 +115,9 @@ class EtkNoteBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: str = Field(min_length=1, max_length=120)
     body: str = Field(min_length=1)
-    tags: list[EtkTag] = Field(min_length=1, max_length=40)
-    links: list[str] | None = Field(default=None, max_length=50)
-    relations: list[EtkRelation] | None = Field(default=None, max_length=50)
+    tags: Annotated[list[EtkTag], AfterValidator(_unique_items)] = Field(min_length=1, max_length=40)
+    links: Annotated[list[str], AfterValidator(_unique_items)] | None = Field(default=None, max_length=50)
+    relations: Annotated[list[EtkRelation], AfterValidator(_unique_items)] | None = Field(default=None, max_length=50)
     aliases: list[str] | None = Field(default=None, max_length=20)
     created: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
 

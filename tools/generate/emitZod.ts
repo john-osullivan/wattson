@@ -6,11 +6,16 @@ import type { Contract, Field, NamedType } from "./dialect.js";
 import { topoSort } from "./dialect.js";
 import { banner, pascal, regexLit, typeName } from "./common.js";
 
-/** array .min/.max from a field's list constraints (zod v4 has no .unique()). */
+/**
+ * array .min/.max and (for `unique_items`) a deep-equality .refine from a
+ * field's list constraints. Zod has no built-in .unique(), so uniqueness is
+ * checked with `etkUnique`, emitted into the generated file.
+ */
 function listMod(f: Field): string {
   let e = "";
   if (f.minItems !== undefined) e += `.min(${f.minItems})`;
   if (f.maxItems !== undefined) e += `.max(${f.maxItems})`;
+  if (f.uniqueItems) e += `.refine(etkUnique, { message: "items must be unique" })`;
   return e;
 }
 
@@ -107,6 +112,24 @@ export function emitZod(c: Contract): string {
     `import { z } from "zod";`,
     "",
     `export const ETK_VERSION = ${c.version};`,
+    "",
+    `// Canonical key for deep-equality uniqueness (stable across key order).`,
+    `function etkUniqueKey(value: unknown): string {`,
+    `  if (value === null || typeof value !== "object") return JSON.stringify(value);`,
+    `  if (Array.isArray(value)) return "[" + value.map(etkUniqueKey).join(",") + "]";`,
+    `  const record = value as Record<string, unknown>;`,
+    `  return ("{" + Object.keys(record).sort().map((k) => JSON.stringify(k) + ":" + etkUniqueKey(record[k])).join(",") + "}");`,
+    `}`,
+    ``,
+    `function etkUnique<T>(items: T[]): boolean {`,
+    `  const seen = new Set<string>();`,
+    `  for (const item of items) {`,
+    `    const key = etkUniqueKey(item);`,
+    `    if (seen.has(key)) return false;`,
+    `    seen.add(key);`,
+    `  }`,
+    `  return true;`,
+    `}`,
     "",
   ];
 

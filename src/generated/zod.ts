@@ -6,6 +6,24 @@ import { z } from "zod";
 
 export const ETK_VERSION = 1;
 
+// Canonical key for deep-equality uniqueness (stable across key order).
+function etkUniqueKey(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return "[" + value.map(etkUniqueKey).join(",") + "]";
+  const record = value as Record<string, unknown>;
+  return ("{" + Object.keys(record).sort().map((k) => JSON.stringify(k) + ":" + etkUniqueKey(record[k])).join(",") + "}");
+}
+
+function etkUnique<T>(items: T[]): boolean {
+  const seen = new Set<string>();
+  for (const item of items) {
+    const key = etkUniqueKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+  }
+  return true;
+}
+
 export const zEtkTag = z.enum([
   "area/brasstax",
   "area/brasstax/market",
@@ -102,9 +120,9 @@ export const zEtkTask = z.object({
 const zNoteBaseShape = {
   title: z.string().min(1).max(120),
   body: z.string().min(1),
-  tags: z.array(zEtkTag).min(1).max(40),
-  links: z.array(z.string().min(1).regex(/^[^\[\]]+$/)).max(50).optional(),
-  relations: z.array(zEtkRelation).max(50).optional(),
+  tags: z.array(zEtkTag).min(1).max(40).refine(etkUnique, { message: "items must be unique" }),
+  links: z.array(z.string().min(1).regex(/^[^\[\]]+$/)).max(50).refine(etkUnique, { message: "items must be unique" }).optional(),
+  relations: z.array(zEtkRelation).max(50).refine(etkUnique, { message: "items must be unique" }).optional(),
   aliases: z.array(z.string().min(1)).max(20).optional(),
   created: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 };

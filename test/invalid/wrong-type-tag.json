@@ -1,0 +1,7 @@
+{
+  "noteType": "project",
+  "title": "Wrong type tag",
+  "body": "A project note carrying the atom type tag instead of type/project.",
+  "tags": ["type/atom"],
+  "created": "2026-09-23"
+}

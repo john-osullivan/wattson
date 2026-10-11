@@ -1,0 +1,11 @@
+{
+  "noteType": "atom",
+  "title": "Duplicate relation",
+  "body": "The same typed relation is listed twice.",
+  "tags": ["type/atom"],
+  "relations": [
+    { "type": "supports", "target": "Media literacy" },
+    { "type": "supports", "target": "Media literacy" }
+  ],
+  "created": "2026-09-23"
+}
