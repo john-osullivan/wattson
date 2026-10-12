@@ -132,14 +132,48 @@ def test_apply_tags_frontmatter_without_tags_key(vault):
     text = "---\ncreated: 2026-10-10\n---\n\n# X\n"
     out = apply.apply_tags(text, ["context/home"])
     assert out is not None
-    assert "tags:" in out
-    assert '- "context/home"' in out
-    assert "created: 2026-10-10" in out
+    # the tags block must land INSIDE the frontmatter, before the closing ---
+    fm = out.split("\n---\n", 2)[0]
+    assert "tags:\n  - \"context/home\"" in fm
+    # and the body is untouched
+    assert out.endswith("\n---\n\n# X\n")
+    # re-adding the same tag is a no-op
+    assert apply.apply_tags(out, ["context/home"]) is None
+
+
+def test_apply_tags_inserts_inside_frontmatter(vault):
+    # regression: tags were once appended AFTER the closing --- (orphan block)
+    out = apply.apply_tags(DAILY, ["area/society/disinformation"])
+    assert out is not None
+    parts = out.split("\n---\n")
+    fm, body = parts[0], parts[1]
+    assert fm.count("tags:") == 1
+    assert '- "area/society/disinformation"' in fm
+    assert body.startswith("# Sat, Oct 10")
+    assert "tags:" not in body
+
+
+def test_apply_tags_extends_mid_frontmatter_block(vault):
+    text = "---\ntags:\n  - \"area/personal/journaling\"\ncreated: 2026-10-10\n---\nbody\n"
+    out = apply.apply_tags(text, ["context/home"])
+    assert out is not None
+    fm = out.split("\n---\n", 2)[0]
+    assert fm.count("tags:") == 1
+    assert fm.index("- \"area/personal/journaling\"") < fm.index("- \"context/home\"")
+    assert fm.index("- \"context/home\"") < fm.index("created: 2026-10-10")
 
 
 def test_apply_tags_noop_returns_none(vault):
     assert apply.apply_tags(DAILY_TAGGED, ["area/personal/journaling"]) is None
     assert apply.apply_tags(DAILY, []) is None
+
+
+def test_apply_tags_dedupes_within_new_tags(vault):
+    # regression: the model may echo a tag twice; it must land once
+    out = apply.apply_tags(DAILY, ["context/home", "context/home", "area/tech/ai"])
+    fm = out.split("\n---\n")[0]
+    assert fm.count('"context/home"') == 1
+    assert fm.count('"area/tech/ai"') == 1
 
 
 def test_apply_tags_checked_stale_fingerprint(vault):
@@ -238,6 +272,63 @@ def test_run_end_to_end_and_idempotent(vault):
     assert len(proposals.list_proposals(vault)) == 1
 
 
+def test_max_notes_bounded_and_resumable(vault):
+    add_note(vault, "10_Journaling/a.md", DAILY)
+    add_note(vault, "10_Journaling/b.md", PLAIN)
+    model, calls = mock_model({
+        "10_Journaling/a.md": {"summary": "s", "applied": [{"tag": "area/tech/ai", "reason": "r"}],
+                               "review_tags": [], "rejected_tags": [], "extractions": [],
+                               "skipped_extractions": [], "review": []},
+        "10_Journaling/b.md": {"summary": "s", "applied": [{"tag": "area/tech/ai", "reason": "r"}],
+                               "review_tags": [], "rejected_tags": [], "extractions": [],
+                               "skipped_extractions": [], "review": []},
+    })
+    rep1 = run.run_intelligent_digest(vault, model=model, max_notes=1)
+    assert rep1.truncated is True and calls["n"] == 1 and rep1.tagged == 1
+    # state persisted per-note: exactly one note processed so far
+    st = state.load_state(vault)
+    done = [p for p, e in st["notes"].items() if e["status"] == "processed"]
+    assert len(done) == 1
+
+    rep2 = run.run_intelligent_digest(vault, model=model, max_notes=1)
+    assert rep2.truncated is False and calls["n"] == 2 and rep2.tagged == 1
+    assert all(e["status"] == "processed"
+               for e in state.load_state(vault)["notes"].values())
+
+
+def test_repropose_same_body_does_not_duplicate(vault):
+    add_note(vault, "10_Journaling/a.md", PLAIN)
+    calls = {"n": 0}
+
+    def flaky(rel, text, established, existing, titles):
+        # the model is non-deterministic: same atom body, different title each run
+        calls["n"] += 1
+        title = "Same Atom" if calls["n"] == 1 else "Same Atom, retitled"
+        return {"summary": "s", "applied": [], "review_tags": [], "rejected_tags": [],
+                "extractions": [{"title": title, "body": "one body", "tags": [], "reason": "r"}],
+                "skipped_extractions": [], "review": []}, None
+
+    run.run_intelligent_digest(vault, model=flaky)
+
+    # crash simulation: state lost, note re-processed, model non-deterministic
+    (vault / "99_Machine/wattson/state.json").unlink()
+    rep2 = run.run_intelligent_digest(vault, model=flaky)
+    envs = list((vault / "99_Machine/wattson/proposals").glob("*.json"))
+    assert len(envs) == 1  # duplicate suppressed (same source + body)
+    assert rep2.atoms_proposed == 0
+    assert rep2.notes[0]["extractions"][0]["deduped"] is True
+
+    # user edits the source note: the pending proposal is refreshed in place
+    (vault / "10_Journaling/a.md").write_text(PLAIN + "\nNew line.\n")
+    rep3 = run.run_intelligent_digest(vault, model=flaky)
+    envs = list((vault / "99_Machine/wattson/proposals").glob("*.json"))
+    assert len(envs) == 1
+    env = json.loads(envs[0].read_text())
+    assert env["source"]["fingerprint"] == \
+        state.fingerprint((vault / "10_Journaling/a.md").read_bytes())
+    assert rep3.notes[0]["extractions"][0]["refreshed"] is True
+
+
 def test_run_model_failure_is_durable_and_retried(vault):
     add_note(vault, "10_Journaling/a.md", DAILY)
     flaky = {"n": 0}
@@ -301,9 +392,43 @@ def test_accept_rejects_stale_source(vault):
         {"title": "Loud voice", "body": "A loud voice is not a well-sourced one.",
          "tags": ["area/society/disinformation"], "reason": "r"},
         "Sat, Oct 10"))
-    p.write_text(DAILY + "user edited after proposal\n")
+    # user rewrite removes the quoted passage -> the extraction is no longer faithful
+    p.write_text(DAILY.replace("A loud voice is not a well-sourced one.", "rewritten entirely"))
     with pytest.raises(proposals.ProposalError, match="source changed"):
         proposals.accept(vault, pid, render_fn=lambda n, p: None)
+
+
+def test_accept_reanchors_superficial_source_change(vault, tmp_path):
+    # regression: our own tag append (or a sibling '## Extracted' backlink)
+    # changes the source fingerprint but leaves the quoted body intact ->
+    # the proposal must be re-anchored, not rejected
+    p = add_note(vault, "10_Journaling/2026-10-10.md", DAILY)
+    fp = state.fingerprint(p.read_bytes())
+    pid = proposals.proposal_id("Loud voice", "A loud voice is not a well-sourced one.")
+    env = proposals.make_envelope(
+        pid, "10_Journaling/2026-10-10.md", fp,
+        {"title": "Loud voice", "body": "A loud voice is not a well-sourced one.",
+         "tags": ["area/society/disinformation"], "reason": "r"},
+        "Sat, Oct 10")
+    proposals.save_envelope(vault, env)
+    apply.apply_tags_checked(vault, "10_Journaling/2026-10-10.md", fp,
+                             ["area/society/disinformation"])
+
+    rendered = {}
+
+    def fake_render(note, out_path):
+        rendered["note"] = note
+        out_path.write_text("---\ntags:\n  - \"type/atom\"\n---\n\n# Loud voice\n\nbody\n")
+
+    out = proposals.accept(vault, pid, render_fn=fake_render)
+    assert (vault / out["atom_path"]).exists()
+    # envelope re-anchored to the post-tag-append fingerprint (accept then
+    # appends the '## Extracted' backlink, so strip it to compare)
+    env2 = proposals.load_envelope(vault, pid)
+    pre_backlink = p.read_text().replace("\n## Extracted\n- [[Loud voice]]\n", "")
+    assert env2["source"]["fingerprint"] == state.fingerprint(pre_backlink.encode("utf-8"))
+    assert env2["source"]["fingerprint"] != fp  # actually re-anchored, not original
+    assert env2["proposals"][0]["status"] == "accepted"
 
 
 def test_reject_proposal(vault):

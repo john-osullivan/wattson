@@ -27,54 +27,66 @@ def _write(vault: Path, rel: str, content: str) -> None:
 
 
 def _tags_block(text: str):
-    """Return (end_of_fm_idx, existing_tags, is_open_tags_block) or None."""
+    """Locate the frontmatter tags list.
+
+    Returns (end, existing, tags_idx, last_item_idx): `end` indexes the '\\n'
+    that opens the closing '---' line; `existing` is the set of tags present;
+    `tags_idx` the index of the 'tags:' key within the frontmatter (between
+    the delimiters) or -1; `last_item_idx` the index of the block's last line
+    (-1 when the key has no items). None when there is no frontmatter.
+    """
     if not text.startswith("---\n"):
         return None
     end = text.find("\n---", 4)
     if end == -1:
         return None
-    lines = text[: end + 4].splitlines()
+    fm = text[4:end].splitlines()
     existing = set()
+    tags_idx = -1
+    last_item = -1
     in_tags = False
-    open_block = False
-    for line in lines:
+    for i, line in enumerate(fm):
         if re.match(r"^tags:\s*$", line):
             in_tags = True
-            open_block = True
+            if tags_idx == -1:
+                tags_idx = i
+            last_item = i
             continue
         if in_tags:
-            m = re.match(r'^\s*-\s*"?([^"\n]+)"?\s*$', line)
+            m = re.match(r'^\s+-\s*"?([^"\n]+?)"?\s*$', line)
             if m:
                 existing.add(m.group(1).lstrip("#"))
+                last_item = i
                 continue
             in_tags = False
-    if not open_block:
-        open_block = False
-    return end, existing, in_tags
+    return end, existing, tags_idx, last_item
 
 
 def apply_tags(text: str, new_tags):
-    """Add tags to frontmatter (additive only). Returns new text or None if no-op."""
+    """Add tags to the frontmatter (additive only). Returns new text or None
+    when nothing new would be added. New items always land inside the
+    frontmatter: appended to the existing tags block, or in a fresh block
+    inserted before the closing delimiter."""
     new_tags = [t for t in new_tags if t]
     if not new_tags:
         return None
     block = _tags_block(text)
-    if block is not None:
-        end, existing, open_at_end = block
-        head, rest = text[: end + 4], text[end + 4:]
-        out = head.splitlines()
-        todo = [t for t in new_tags if t not in existing]
-        if not todo:
-            return None
-        items = [f'  - "{t}"' for t in todo]
-        if open_at_end:
-            out.extend(items)
-        else:
-            out.append("tags:")
-            out.extend(items)
-        return "\n".join(out) + rest
-    items = "\n".join(f'  - "{t}"' for t in new_tags)
-    return f"---\ntags:\n{items}\n---\n\n" + text
+    if block is None:
+        items = "\n".join(f'  - "{t}"' for t in new_tags)
+        return f"---\ntags:\n{items}\n---\n\n" + text
+    end, existing, tags_idx, last_item = block
+    todo = list(dict.fromkeys(t for t in new_tags if t not in existing))
+    if not todo:
+        return None
+    head, rest = text[:end + 4], text[end + 4:]
+    lines = head.splitlines()  # last element is the closing '---'
+    items = [f'  - "{t}"' for t in todo]
+    if tags_idx == -1:
+        lines[len(lines) - 1:len(lines) - 1] = ["tags:"] + items
+    else:
+        # fm index -> lines index shifts by 1 for the opening '---'
+        lines[last_item + 2:last_item + 2] = items
+    return "\n".join(lines) + rest
 
 
 def apply_tags_checked(vault: Path, rel: str, fp: str, new_tags) -> bool:

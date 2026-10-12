@@ -37,6 +37,9 @@ digest-version: 1
 {% if not semantic %}(not run)
 {% else %}{% if semantic.skipped %}(skipped: {{ semantic.skip_reason }})
 {% else %}{{ semantic.examined }} note(s) examined; {{ semantic.notes | length }} changed since last digest; {{ semantic.tagged }} tagged; {{ semantic.atoms_proposed }} extraction proposal(s).
+{% if semantic.truncated %}- **partial run**: this digest processed only a bounded batch; the remaining changed notes carry over to the next digest.
+
+{% endif %}
 
 {% if not semantic.notes %}(no changed notes — nothing to review)
 

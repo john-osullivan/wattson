@@ -113,7 +113,8 @@
       "10_Daily/2026-09-01.md"
     ],
     "state_errors": [],
-    "proposals": []
+    "proposals": [],
+    "truncated": false
   },
   "backup": "pushed to origin",
   "obsidian": ""

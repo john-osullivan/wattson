@@ -41,7 +41,8 @@
     "failures": [],
     "deleted": [],
     "state_errors": [],
-    "proposals": []
+    "proposals": [],
+    "truncated": false
   },
   "backup": "",
   "obsidian": ""

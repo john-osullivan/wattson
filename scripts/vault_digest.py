@@ -27,7 +27,7 @@ USER_IDENTITY = ("John Osullivan", "john.osullivan42@gmail.com")
 REQ_DIR = Path("99_Machine/digest/requests")
 OUT_DIR = Path("99_Machine/digest")
 INBOX_DIR = Path("00_Inbox")
-LOCK = "/tmp/wattson-vault-digest.lock"
+LOCK = os.environ.get("WATTSON_DIGEST_LOCK", "/tmp/wattson-vault-digest.lock")
 
 
 def git(vault, *args, identity=None):
@@ -103,8 +103,37 @@ def list_agent_commits(vault, prev, head):
 
 
 def last_digest_commit(vault):
-    out = git(vault, "log", "--grep", r"^agent: digest [0-9]", "--format=%H", "-n", "1")
+    # final digest-note commit only: "agent: digest <stamp>" (the "changes"
+    # commits carry a trailing "changes (...)" and must not match)
+    out = git(vault, "log", "-E", "--grep", r"^agent: digest [^ ]+$", "--format=%H", "-n", "1")
     return out or None
+
+
+def last_sync_checkpoint(vault):
+    out = git(vault, "log", "--grep", r"^sync: checkpoint", "--format=%H", "-n", "1")
+    return out or None
+
+
+def filter_user_changes(added, modified, deleted, renamed):
+    """Drop agent-owned machine paths (99_Machine/) from the user-facing change
+    lists; they are covered by the 'Agent since last digest' section."""
+    drop = lambda lst: [p for p in lst if not p.startswith("99_Machine/")]
+    return drop(added), drop(modified), drop(deleted), \
+        [r for r in renamed if "99_Machine/" not in r]
+
+
+def user_change_paths(vault, prev, head):
+    """Paths changed by non-agent commits in prev..head — the user's sync state.
+    Paths touched only by `agent:` commits are excluded (they are reported in
+    the 'Agent since last digest' section instead)."""
+    out = git(vault, "log", f"{prev}..{head}", "--name-only", "--pretty=format:@@@%s")
+    paths, in_agent = set(), False
+    for line in out.splitlines():
+        if line.startswith("@@@"):
+            in_agent = line[3:].startswith("agent:")
+        elif line.strip() and not in_agent:
+            paths.add(line)
+    return paths
 
 
 def _change_section(title, items):
@@ -116,7 +145,8 @@ def _change_section(title, items):
             "folder": folder,
             "count": len(names),
             "root_single": len(names) == 1 and folder == "(vault root)",
-            "paths": names,
+            # Obsidian internals: report the count, not the file list
+            "paths": [] if folder == ".obsidian" else names,
         })
     return {"title": title, "count": len(items), "groups": group_list}
 
@@ -225,6 +255,8 @@ def main():
     ap.add_argument("--request", help="marker filename (without .md); default: newest pending marker")
     ap.add_argument("--quiet", action="store_true", help="exit silently when no marker is pending")
     ap.add_argument("--skip-semantic", action="store_true", help="run structural digest only (no model calls)")
+    ap.add_argument("--max-notes", type=int, default=0, metavar="N",
+                    help="process at most N changed notes semantically this run (0 = all); the rest carry over")
     args = ap.parse_args()
 
     vault = Path(args.vault).expanduser().resolve()
@@ -248,8 +280,14 @@ def main():
         trigger = str(marker.relative_to(vault))
 
     prev = git(vault, "rev-parse", "HEAD")
-    since_commit = last_digest_commit(vault) or git(vault, "rev-list", "--max-parents=0", "HEAD")
-    since_label = "baseline" if since_commit == git(vault, "rev-list", "--max-parents=0", "HEAD") else f"digest {git(vault, 'log', '-1', '--format=%s', since_commit)}"
+    root = git(vault, "rev-list", "--max-parents=0", "HEAD")
+    # 'Agent since last digest' range starts at the previous agent digest commit
+    digest_ref = last_digest_commit(vault) or root
+    since_label = "baseline" if digest_ref == root \
+        else f"digest {git(vault, 'log', '-1', '--format=%s', digest_ref)}"
+    # 'You' range: consecutive sync checkpoints; without a previous checkpoint
+    # the root commit is the baseline (first run shows everything as new)
+    user_prev = last_sync_checkpoint(vault) or root
 
     status = git(vault, "status", "--porcelain")
     sync_sha = None
@@ -258,10 +296,23 @@ def main():
         git(vault, "add", "-A")
         git(vault, "commit", "-m", f"sync: checkpoint {stamp} ({n} paths)", identity=USER_IDENTITY)
         sync_sha = git(vault, "rev-parse", "--short", "HEAD")
+        user_head = git(vault, "rev-parse", "HEAD")
+    else:
+        user_head = user_prev  # nothing new from the user this run
 
     head = git(vault, "rev-parse", "HEAD")
-    added, modified, deleted, renamed = section_changes(vault, since_commit, head)
-    agent_commits = list_agent_commits(vault, since_commit, head)
+    if user_head != user_prev:
+        added, modified, deleted, renamed = section_changes(vault, user_prev, user_head)
+        user_paths = user_change_paths(vault, user_prev, user_head)
+        added = [p for p in added if p in user_paths]
+        modified = [p for p in modified if p in user_paths]
+        deleted = [p for p in deleted if p in user_paths]
+        renamed = [r for r in renamed
+                   if user_paths & {r.split(" -> ")[0], r.split(" -> ")[-1]}]
+        added, modified, deleted, renamed = filter_user_changes(added, modified, deleted, renamed)
+    else:
+        added, modified, deleted, renamed = [], [], [], []
+    agent_commits = list_agent_commits(vault, digest_ref, head)
     inbox = inbox_files(vault)
 
     semantic = None
@@ -271,7 +322,7 @@ def main():
         semantic.skip_reason = "--skip-semantic"
     else:
         try:
-            semantic = pipeline_run.run_intelligent_digest(vault)
+            semantic = pipeline_run.run_intelligent_digest(vault, max_notes=args.max_notes)
         except Exception as e:  # structural digest must still work if the model is down
             semantic = pipeline_run.Report()
             semantic.skipped = True

@@ -102,25 +102,64 @@ def list_proposals(vault: Path) -> list:
     return out
 
 
+def normalize_body(body: str) -> str:
+    return re.sub(r"\s+", " ", body.strip().casefold())
+
+
+def find_pending_duplicate(vault: Path, source_path: str, body: str) -> dict | None:
+    """First pending proposal from the same source with the same body (after
+    whitespace/case normalization). The model is non-deterministic: re-running
+    a note re-proposes the same atom, sometimes under a different title, so the
+    body is the identity. Returns {id, fingerprint, title, source} or None."""
+    want = normalize_body(body)
+    d = vault / config.PROPOSAL_DIR
+    if not d.is_dir():
+        return None
+    for p in sorted(d.glob("*.json")):
+        try:
+            env = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        src = env.get("source", {})
+        if src.get("path") != source_path:
+            continue
+        for prop in env.get("proposals", []):
+            if prop.get("status") != "pending_review":
+                continue
+            b = normalize_body(prop.get("note", {}).get("body", ""))
+            if b == want:
+                return {"id": prop["proposalId"], "fingerprint": src.get("fingerprint", ""),
+                        "title": prop["note"]["title"], "source": source_path}
+    return None
+
+
 def accept(vault: Path, pid: str, render_fn=None) -> dict:
-    """Accept a pending proposal. Returns {atom_path, source_path}. Never raises
-    on stale source: raises ProposalError with a clear message instead."""
+    """Accept a pending proposal. Returns {atom_path, source_path, source_changed}.
+    Refuses only when the extracted body no longer appears verbatim in the
+    source (superficial changes — our own tag append, an '## Extracted'
+    backlink from a sibling proposal — are re-anchored, not rejected)."""
     render_fn = render_fn or apply.render_atom_markdown
     env = load_envelope(vault, pid)
     prop = env["proposals"][0]
     if prop["status"] != "pending_review":
         raise ProposalError(f"proposal {pid} is {prop['status']}, not pending_review")
+    note = prop["note"]
     src = env["source"]
     src_p = vault / src["path"]
     if not src_p.exists():
         raise ProposalError(f"source note no longer exists: {src['path']}")
     fp = state.fingerprint(src_p.read_bytes())
     if fp != src["fingerprint"]:
-        raise ProposalError(
-            f"source changed since the proposal was made ({src['path']}); "
-            "reject this proposal and re-run the digest"
-        )
-    note = prop["note"]
+        text = src_p.read_text(encoding="utf-8", errors="replace")
+        want = normalize_body(note["body"])
+        if want and want in normalize_body(text):
+            env["source"]["fingerprint"] = fp
+            save_envelope(vault, env)
+        else:
+            raise ProposalError(
+                f"source changed since the proposal was made ({src['path']}); "
+                "reject this proposal and re-run the digest"
+            )
     atom_dir = apply.find_atom_dir(vault)
     atom_name = apply.slugify(note["title"]) + ".md"
     atom_rel = f"{atom_dir}/{atom_name}"

@@ -1,0 +1,69 @@
+{
+  "type": "wattson-digest",
+  "digest-version": 1,
+  "stamp": "manual-20261012-142000",
+  "created": "2026-10-12 00:45",
+  "trigger": "manual (terminal)",
+  "since": "baseline",
+  "sync_sha": null,
+  "changed_total": 3,
+  "changes": [
+    {
+      "title": "Added",
+      "count": 3,
+      "groups": [
+        {
+          "folder": "10_Journaling",
+          "count": 3,
+          "root_single": false,
+          "paths": ["10_Journaling/2026-10-01.md", "10_Journaling/2026-10-02.md", "10_Journaling/2026-10-03.md"]
+        }
+      ]
+    },
+    {
+      "title": "Modified",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Deleted",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Renamed",
+      "count": 0,
+      "groups": []
+    }
+  ],
+  "agent_commits": [],
+  "inbox": [],
+  "semantic": {
+    "skipped": false,
+    "skip_reason": "",
+    "examined": 608,
+    "tagged": 1,
+    "atoms_proposed": 0,
+    "notes": [
+      {
+        "path": "10_Journaling/2026-10-01.md",
+        "append_only": false,
+        "summary": "journal entry with a disinformation theme",
+        "applied": [{"tag": "area/society/disinformation", "reason": "recurring feed criticism"}],
+        "review_tags": [],
+        "rejected_tags": [],
+        "extractions": [],
+        "skipped_extractions": [],
+        "review": [],
+        "error": ""
+      }
+    ],
+    "failures": [],
+    "deleted": [],
+    "state_errors": [],
+    "proposals": [],
+    "truncated": true
+  },
+  "backup": "",
+  "obsidian": ""
+}

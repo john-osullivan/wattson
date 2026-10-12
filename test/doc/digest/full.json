@@ -196,7 +196,8 @@
         "source": "10_Daily/2026-10-12.md",
         "reason": "self-contained principle stated as a rule"
       }
-    ]
+    ],
+    "truncated": false
   },
   "backup": "pushed to origin",
   "obsidian": "synced to iCloud (last sync 2026-10-12 00:31)"
