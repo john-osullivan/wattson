@@ -17,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "py"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from wattson.pipeline import apply, proposals, relations, state  # noqa: E402
-from vault_digest import render_doc_markdown  # noqa: E402
+from vault_digest import push_if_stale, render_doc_markdown  # noqa: E402
 
 AGENT_IDENTITY = ("WATTSON Agent", "agent@wattson.local")
 LOCK = "/tmp/wattson-vault-digest.lock"
@@ -32,6 +32,15 @@ def git(vault, *args, identity=None):
     if r.returncode != 0:
         raise RuntimeError(f"git {' '.join(map(str, args))} failed: {r.stderr.strip()}")
     return r.stdout.strip()
+
+
+def commit_and_push(vault, msg):
+    """Commit as the agent and push if the remote has gone stale."""
+    git(vault, "add", "-A")
+    git(vault, "commit", "-m", msg, identity=AGENT_IDENTITY)
+    status = push_if_stale(vault)
+    if status:
+        print(status)
 
 
 def main():
@@ -97,8 +106,7 @@ def main():
             relations.reject(vault, args.proposal_id)
         else:
             proposals.reject(vault, args.proposal_id)
-        git(vault, "add", "-A")
-        git(vault, "commit", "-m", f"agent: reject proposal {args.proposal_id}", identity=AGENT_IDENTITY)
+        commit_and_push(vault, f"agent: reject proposal {args.proposal_id}")
         print(f"rejected {args.proposal_id}")
         return
 
@@ -108,18 +116,14 @@ def main():
             out = relations.accept(vault, args.proposal_id)
         except (relations.RelationError, FileNotFoundError, ValueError, OSError) as e:
             sys.exit(f"cannot accept {args.proposal_id}: {e}")
-        git(vault, "add", "-A")
-        git(vault, "commit", "-m", f"agent: accept proposal {args.proposal_id} (relation in {out['atom_path']})",
-            identity=AGENT_IDENTITY)
+        commit_and_push(vault, f"agent: accept proposal {args.proposal_id} (relation in {out['atom_path']})")
         print(f"accepted {args.proposal_id}: {out['line']}")
         return
     try:
         out = proposals.accept(vault, args.proposal_id)
     except (proposals.ProposalError, FileNotFoundError, ValueError, OSError) as e:
         sys.exit(f"cannot accept {args.proposal_id}: {e}")
-    git(vault, "add", "-A")
-    git(vault, "commit", "-m", f"agent: accept proposal {args.proposal_id} (atom: {out['atom_path']})",
-        identity=AGENT_IDENTITY)
+    commit_and_push(vault, f"agent: accept proposal {args.proposal_id} (atom: {out['atom_path']})")
     print(f"accepted {args.proposal_id}: wrote {out['atom_path']}; "
           f"source linked: {out['source_path']}")
 

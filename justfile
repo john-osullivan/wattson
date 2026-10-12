@@ -50,10 +50,13 @@ digest:  # run vault digest now (newest pending marker, or manual stamp)
 digest-structural:  # structural digest only, no model calls
 	python3 scripts/vault_digest.py --vault {{justfile_directory()}}/vault-runtime/vault-data --skip-semantic
 
+push-check:  # push the vault remote if it is >10 min behind the local record (no-op otherwise)
+	python3 scripts/vault_digest.py --vault {{justfile_directory()}}/vault-runtime/vault-data --push-check
+
 proposal *args:  # extraction proposals: just proposal list | show <id> | accept <id> | reject <id>
 	python3 scripts/vault_proposal.py --vault {{justfile_directory()}}/vault-runtime/vault-data {{args}}
 
-digest-watch:  # start background 30s poller; runs a digest when a marker note appears in 99_Machine/digest/requests/
+digest-watch:  # start background 30s poller; digests on marker notes in 99_Machine/digest/requests/ and keeps the git remote <=10 min behind
 	@if [ -f /tmp/wattson-digest-watch.pid ] && kill -0 "$(cat /tmp/wattson-digest-watch.pid)" 2>/dev/null; then echo "digest watcher already running (pid $(cat /tmp/wattson-digest-watch.pid))"; else nohup bash -c 'while true; do python3 "{{justfile_directory()}}/scripts/vault_digest.py" --vault "{{justfile_directory()}}/vault-runtime/vault-data" --quiet; sleep 30; done' >> "{{justfile_directory()}}/vault-runtime/digest-watch.log" 2>&1 & echo $! > /tmp/wattson-digest-watch.pid; echo "digest watcher started (pid $(cat /tmp/wattson-digest-watch.pid), log: vault-runtime/digest-watch.log)"; fi
 
 digest-stop:  # stop the digest watcher

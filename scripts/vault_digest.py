@@ -249,12 +249,63 @@ def push_backup(vault):
     return f"PUSH FAILED to {remote}: {(r.stderr or r.stdout).strip()[:300]}"
 
 
+PUSH_STALE_MINUTES = 10
+
+
+def push_if_stale(vault, max_behind_minutes=PUSH_STALE_MINUTES):
+    """Push when the remote record is more than N minutes behind the local one.
+
+    Stateless: after a quiet fetch, compares the remote-tracking ref's commit
+    time against local HEAD's commit time. The remote is "N minutes behind"
+    when its tip commit is more than N minutes older than the local tip, so
+    this keeps the remote at most ~N minutes behind the local record without
+    any bookkeeping. Best-effort: never raises; returns a status line when it
+    pushed, else None.
+    """
+    r = subprocess.run(["git", "-C", str(vault), "remote"], capture_output=True, text=True)
+    remotes = [x for x in r.stdout.split() if x]
+    if not remotes:
+        return None
+    remote = remotes[0]
+    try:
+        branch = git(vault, "rev-parse", "--abbrev-ref", "HEAD")
+        if branch == "HEAD":
+            return None  # detached
+        f = subprocess.run(["git", "-C", str(vault), "fetch", remote, branch],
+                           capture_output=True, text=True, timeout=60)
+        if f.returncode != 0:
+            return None
+        remote_ref = f"{remote}/{branch}"
+        head = git(vault, "rev-parse", "HEAD")
+        rref = subprocess.run(["git", "-C", str(vault), "rev-parse", "--quiet",
+                               "--verify", remote_ref], capture_output=True, text=True)
+        if rref.returncode != 0:
+            remote_time = 0  # branch does not exist on the remote yet
+        else:
+            if rref.stdout.strip() == head:
+                return None  # already up to date
+            remote_time = int(git(vault, "log", "-1", "--format=%ct", remote_ref))
+        local_time = int(git(vault, "log", "-1", "--format=%ct", "HEAD"))
+        if local_time - remote_time <= max_behind_minutes * 60:
+            return None  # not stale yet
+        r = subprocess.run(["git", "-C", str(vault), "push", remote, branch],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            return f"pushed to {remote} (remote was {max_behind_minutes}+ min behind)"
+        return f"PUSH FAILED to {remote}: {(r.stderr or r.stdout).strip()[:200]}"
+    except (subprocess.SubprocessError, OSError, ValueError, RuntimeError):
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser(description="Run a WATTSON vault digest (structural + semantic).")
     ap.add_argument("--vault", default="vault-runtime/vault-data")
     ap.add_argument("--request", help="marker filename (without .md); default: newest pending marker")
     ap.add_argument("--quiet", action="store_true", help="exit silently when no marker is pending")
     ap.add_argument("--skip-semantic", action="store_true", help="run structural digest only (no model calls)")
+    ap.add_argument("--push-check", action="store_true",
+                    help="tick only: push to the remote if it is more than "
+                         f"{PUSH_STALE_MINUTES} min behind local, then exit")
     ap.add_argument("--max-notes", type=int, default=0, metavar="N",
                     help="process at most N changed notes semantically this run (0 = all); the rest carry over")
     args = ap.parse_args()
@@ -269,9 +320,19 @@ def main():
     except BlockingIOError:
         return
 
+    if args.push_check:
+        status = push_if_stale(vault)
+        print(status or "remote up to date")
+        return
+
     marker = find_marker(vault, args.request)
     if marker is None:
+        # No pending digest: still keep the backup remote from drifting more
+        # than PUSH_STALE_MINUTES behind the local record, then exit as before.
+        status = push_if_stale(vault)
         if args.quiet or args.request:
+            if status and not args.quiet:
+                print(status)
             return
         stamp = "manual-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         trigger = "manual (terminal)"
