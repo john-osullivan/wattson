@@ -16,7 +16,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "py"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
-from wattson.pipeline import apply, proposals, state  # noqa: E402
+from wattson.pipeline import apply, proposals, relations, state  # noqa: E402
 from vault_digest import render_doc_markdown  # noqa: E402
 
 AGENT_IDENTITY = ("WATTSON Agent", "agent@wattson.local")
@@ -52,13 +52,23 @@ def main():
         rows = proposals.list_proposals(vault)
         if not rows:
             print("(no proposals)")
-            return
-        for r in rows:
-            print(f"{r['status']:<16} {r['id']}  {r['title']}  <- {r['source']}")
+        else:
+            for r in rows:
+                print(f"{r['status']:<16} {r['id']}  {r['title']}  <- {r['source']}")
+        rels = relations.list_relations(vault)
+        if rels:
+            if rows:
+                print()
+            for r in rels:
+                print(f"{r['status']:<16} {r['id']}  {r['source']}  --[{r['type']}]-->  {r['target']}")
+        if not rows and not rels:
+            print("(no relation proposals)")
         return
 
     if not args.proposal_id:
         sys.exit(f"usage: vault_proposal.py --vault <v> {args.command} <id>")
+
+    is_relation = args.proposal_id.startswith("rel-")
 
     lock_fd = open(LOCK, "w")
     try:
@@ -67,6 +77,14 @@ def main():
         sys.exit("another digest is running; try again shortly")
 
     if args.command == "show":
+        if is_relation:
+            env = relations.load_envelope(vault, args.proposal_id)
+            r = env["proposals"][0]["relation"]
+            if args.as_json:
+                print(json.dumps(env, indent=2))
+            else:
+                print(f"{r['source']}  --[{r['type']}]-->  {r['target']}\n{r['reason']}")
+            return
         env = proposals.load_envelope(vault, args.proposal_id)
         if args.as_json:
             print(json.dumps(env, indent=2))
@@ -75,13 +93,26 @@ def main():
         return
 
     if args.command == "reject":
-        proposals.reject(vault, args.proposal_id)
+        if is_relation:
+            relations.reject(vault, args.proposal_id)
+        else:
+            proposals.reject(vault, args.proposal_id)
         git(vault, "add", "-A")
         git(vault, "commit", "-m", f"agent: reject proposal {args.proposal_id}", identity=AGENT_IDENTITY)
         print(f"rejected {args.proposal_id}")
         return
 
     # accept
+    if is_relation:
+        try:
+            out = relations.accept(vault, args.proposal_id)
+        except (relations.RelationError, FileNotFoundError, ValueError, OSError) as e:
+            sys.exit(f"cannot accept {args.proposal_id}: {e}")
+        git(vault, "add", "-A")
+        git(vault, "commit", "-m", f"agent: accept proposal {args.proposal_id} (relation in {out['atom_path']})",
+            identity=AGENT_IDENTITY)
+        print(f"accepted {args.proposal_id}: {out['line']}")
+        return
     try:
         out = proposals.accept(vault, args.proposal_id)
     except (proposals.ProposalError, FileNotFoundError, ValueError, OSError) as e:
