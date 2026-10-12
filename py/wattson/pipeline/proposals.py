@@ -27,15 +27,26 @@ def envelope_path(vault: Path, pid: str) -> Path:
     return vault / config.PROPOSAL_DIR / f"{pid}.json"
 
 
+LINK_TARGET_RE = re.compile(r"^[^\[\]]+$")
+
+
+def link_target(title: str) -> str:
+    """A note title usable as a wikilink target (the ETK schema forbids
+    brackets in link targets, but Obsidian headings can carry them)."""
+    t = re.sub(r"[\[\]]", "", str(title)).strip()
+    return t or str(title).strip()
+
+
 def make_envelope(pid, source_path, source_fp, extraction, source_title) -> dict:
     tags = ["type/atom"] + [t for t in extraction["tags"] if t != "type/atom"][:3]
+    target = link_target(source_title)
     note = {
         "noteType": "atom",
         "title": extraction["title"],
         "body": extraction["body"],
         "tags": tags,
-        "links": [source_title],
-        "relations": [{"type": "derived-from", "target": source_title}],
+        "links": [target],
+        "relations": [{"type": "derived-from", "target": target}],
         "created": date.today().isoformat(),
     }
     return {
@@ -66,6 +77,12 @@ def validate_envelope(env: dict) -> None:
             raise ValueError("atom note must carry type/atom")
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", n.get("created", "")):
             raise ValueError("bad created date")
+        for l in n.get("links") or []:
+            if not LINK_TARGET_RE.match(str(l)):
+                raise ValueError(f"bad link target (brackets not allowed): {l!r}")
+        for r in n.get("relations") or []:
+            if not LINK_TARGET_RE.match(str(r.get("target", ""))):
+                raise ValueError(f"bad relation target (brackets not allowed): {r.get('target')!r}")
 
 
 def save_envelope(vault: Path, env: dict) -> None:

@@ -442,6 +442,39 @@ def test_reject_proposal(vault):
         proposals.reject(vault, pid)
 
 
+def test_make_envelope_sanitizes_bracketed_source_title(vault):
+    # regression: Obsidian headings can carry brackets (e.g. status markers),
+    # which are invalid as ETK wikilink targets
+    pid = proposals.proposal_id("Flow theory", "verbatim body text")
+    env = proposals.make_envelope(
+        pid, "a.md", "a" * 64,
+        {"title": "Flow theory", "body": "verbatim body text",
+         "tags": ["area/tech/ai"], "reason": "r"},
+        "**[shipped] Practice Stripe via API worksheets**")
+    proposals.save_envelope(vault, env)
+    n = proposals.load_envelope(vault, pid)["proposals"][0]["note"]
+    assert n["links"] == ["**shipped Practice Stripe via API worksheets**"]
+    assert n["relations"] == [{"type": "derived-from",
+                               "target": "**shipped Practice Stripe via API worksheets**"}]
+
+
+def test_save_envelope_rejects_bracketed_link_target(vault):
+    env = {
+        "source": {"path": "a.md", "fingerprint": "a" * 64},
+        "proposals": [{
+            "proposalId": "atom-x-deadbeef",
+            "status": "pending_review",
+            "note": {
+                "noteType": "atom", "title": "X", "body": "b",
+                "tags": ["type/atom"], "links": ["bad [target]"],
+                "relations": [], "created": "2026-10-12",
+            },
+        }],
+    }
+    with pytest.raises(ValueError, match="brackets not allowed"):
+        proposals.save_envelope(vault, env)
+
+
 def test_state_save_load_roundtrip_and_corruption(tmp_path):
     st = state.empty_state()
     state.record_processed(st, "a/b.md", "f" * 64, "text")
