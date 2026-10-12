@@ -23,3 +23,8 @@ vault-runtime/test_vault/.obsidian/
 # synced real vault data (never commit user notes)
 vault-runtime/vault-data/
 vault-runtime/digest-watch.log
+
+# core dumps
+core
+
+.scratch/

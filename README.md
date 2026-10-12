@@ -6,9 +6,11 @@ maintenance layer over a durable Markdown knowledge graph: capture stays
 low-friction (Daily Notes), and the system performs the semantic work of
 turning raw material into structured, linked, tagged knowledge.
 
-**Status: Phase 1 (M1) implemented.** The ETK contracts are frozen and
-deterministic Knap rendering is proven end-to-end. The design baseline, the
-Phase 0 vault runtime (ADR 0001), and Phase 1 all live in this repo.
+**Status: Phase 2 in progress.** The ETK contracts are frozen and
+deterministic Knap rendering is proven end-to-end; the vault digest and the
+extraction-proposal lifecycle (tagging + atom proposals, structured
+JSON + Knap-rendered Markdown) are implemented. The design baseline, the
+Phase 0 vault runtime (ADR 0001), and Phases 1–2 live in this repo.
 
 ## Design baseline
 
@@ -49,11 +51,25 @@ just test          # node:test (golden+invalid+schema) + python tests
 just typecheck     # tsc --noEmit
 just render test/golden/atom-minimal.json        # M1 command, prints Markdown
 just render test/golden/source-full.json -o /tmp/n.md   # write to a file
+just render-doc <ctx.json> --template digest     # render a machine doc (no ETK validation)
+just digest        # vault digest: structural pass + semantic pipeline (model)
+just digest-structural   # structural digest only (no model calls)
+just proposal list                 # pending extraction proposals
+just proposal show <id>            # rendered Markdown (--json for the raw envelope)
+just proposal accept <id>          # render the atom, link the source, commit `agent:`
+just proposal reject <id>
 ```
 
 The M1 command validates the note (Zod, fail-closed) then renders it through
 the matching Knap template. Invalid notes are rejected before anything is
 written — `just render` prints the structured issue and exits non-zero.
+
+Machine documents (vault digest, proposal envelopes) are structured JSON
+rendered through `templates/digest.knap.md` / `templates/proposal.knap.md`
+via `etk render-doc` — the same deterministic Knap engine, no hand-written
+Markdown. The digest writes both artifacts to the vault:
+`99_Machine/digest/<stamp>.json` (source of truth) and
+`99_Machine/digest/<stamp>.md` (rendered).
 
 ## Repository state
 
@@ -70,8 +86,11 @@ Per the phased plan:
   (full Obsidian in a container, `vault-runtime/`; decision ADR 0001).
 - **Phase 1** — DONE. ETK contracts frozen and deterministic Knap rendering
   proven (ADR 0002).
-- **Phase 2** — next: proposal review workflow and the processing pipeline
-  that turns raw material into proposal envelopes.
+- **Phase 2** — IN PROGRESS. Processing pipeline + proposal lifecycle done:
+  semantic digest (established-tag tagging, atom extraction proposals),
+  durable sidecar state, proposal review CLI, Knap-rendered digest.
+  Remaining: live model pass against the real vault and durable Olares
+  operation (app image, worker, chat).
 
 See `wattson-handoff/02-phased-implementation-plan.md` for work items and
 exit criteria, and `docs/plans/phase-1-etk-contracts.md` for the Phase 1 plan.

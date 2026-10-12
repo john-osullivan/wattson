@@ -1,0 +1,120 @@
+{
+  "type": "wattson-digest",
+  "digest-version": 1,
+  "stamp": "manual-20261012-141200",
+  "created": "2026-10-12 00:35",
+  "trigger": "99_Machine/digest/requests/manual-20261012-140500.md",
+  "since": "digest agent: digest 2026-10-01-090000",
+  "sync_sha": "ab12cd3",
+  "changed_total": 6,
+  "changes": [
+    {
+      "title": "Added",
+      "count": 3,
+      "groups": [
+        {
+          "folder": "(vault root)",
+          "count": 1,
+          "root_single": true,
+          "paths": [
+            "README-extra.md"
+          ]
+        },
+        {
+          "folder": "00_Inbox",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "00_Inbox/note-a.md"
+          ]
+        },
+        {
+          "folder": "10_Daily",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "10_Daily/2026-10-12.md"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Modified",
+      "count": 2,
+      "groups": [
+        {
+          "folder": "10_Daily",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "10_Daily/2026-10-11.md"
+          ]
+        },
+        {
+          "folder": "30_Knowledge",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "30_Knowledge/Atoms/Steel-man first.md"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Deleted",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Renamed",
+      "count": 1,
+      "groups": [
+        {
+          "folder": "10_Daily",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "10_Daily/old-daily.md -> 10_Daily/new-daily.md"
+          ]
+        }
+      ]
+    }
+  ],
+  "agent_commits": [
+    {
+      "sha": "ef56gh7",
+      "subject": "agent: digest 2026-10-01-090000",
+      "paths": [
+        "99_Machine/digest/2026-10-01-090000.md"
+      ]
+    },
+    {
+      "sha": "ij78kl9",
+      "subject": "agent: accept proposal atom-steel-man-0123abcd",
+      "paths": [
+        "30_Knowledge/Atoms/Steel-man first.md",
+        "10_Daily/2026-10-01.md"
+      ]
+    }
+  ],
+  "inbox": [
+    "00_Inbox/capture-1.md",
+    "00_Inbox/capture-2.md"
+  ],
+  "semantic": {
+    "skipped": false,
+    "skip_reason": "",
+    "examined": 7,
+    "tagged": 0,
+    "atoms_proposed": 0,
+    "notes": [],
+    "failures": [],
+    "deleted": [
+      "10_Daily/2026-09-01.md"
+    ],
+    "state_errors": [],
+    "proposals": []
+  },
+  "backup": "pushed to origin",
+  "obsidian": ""
+}

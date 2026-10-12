@@ -1,0 +1,37 @@
+{
+  "type": "wattson-digest",
+  "digest-version": 1,
+  "stamp": "manual-20261012-141000",
+  "created": "2026-10-12 00:35",
+  "trigger": "manual (terminal)",
+  "since": "baseline",
+  "sync_sha": null,
+  "changed_total": 0,
+  "changes": [
+    {
+      "title": "Added",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Modified",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Deleted",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Renamed",
+      "count": 0,
+      "groups": []
+    }
+  ],
+  "agent_commits": [],
+  "inbox": [],
+  "semantic": null,
+  "backup": "",
+  "obsidian": ""
+}

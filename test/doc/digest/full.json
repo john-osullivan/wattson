@@ -1,0 +1,203 @@
+{
+  "type": "wattson-digest",
+  "digest-version": 1,
+  "stamp": "manual-20261012-140500",
+  "created": "2026-10-12 00:35",
+  "trigger": "99_Machine/digest/requests/manual-20261012-140500.md",
+  "since": "digest agent: digest 2026-10-01-090000",
+  "sync_sha": "ab12cd3",
+  "changed_total": 6,
+  "changes": [
+    {
+      "title": "Added",
+      "count": 3,
+      "groups": [
+        {
+          "folder": "(vault root)",
+          "count": 1,
+          "root_single": true,
+          "paths": [
+            "README-extra.md"
+          ]
+        },
+        {
+          "folder": "00_Inbox",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "00_Inbox/note-a.md"
+          ]
+        },
+        {
+          "folder": "10_Daily",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "10_Daily/2026-10-12.md"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Modified",
+      "count": 2,
+      "groups": [
+        {
+          "folder": "10_Daily",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "10_Daily/2026-10-11.md"
+          ]
+        },
+        {
+          "folder": "30_Knowledge",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "30_Knowledge/Atoms/Steel-man first.md"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Deleted",
+      "count": 0,
+      "groups": []
+    },
+    {
+      "title": "Renamed",
+      "count": 1,
+      "groups": [
+        {
+          "folder": "10_Daily",
+          "count": 1,
+          "root_single": false,
+          "paths": [
+            "10_Daily/old-daily.md -> 10_Daily/new-daily.md"
+          ]
+        }
+      ]
+    }
+  ],
+  "agent_commits": [
+    {
+      "sha": "ef56gh7",
+      "subject": "agent: digest 2026-10-01-090000",
+      "paths": [
+        "99_Machine/digest/2026-10-01-090000.md"
+      ]
+    },
+    {
+      "sha": "ij78kl9",
+      "subject": "agent: accept proposal atom-steel-man-0123abcd",
+      "paths": [
+        "30_Knowledge/Atoms/Steel-man first.md",
+        "10_Daily/2026-10-01.md"
+      ]
+    }
+  ],
+  "inbox": [
+    "00_Inbox/capture-1.md",
+    "00_Inbox/capture-2.md"
+  ],
+  "semantic": {
+    "skipped": false,
+    "skip_reason": "",
+    "examined": 42,
+    "tagged": 3,
+    "atoms_proposed": 1,
+    "notes": [
+      {
+        "path": "10_Daily/2026-10-12.md",
+        "append_only": false,
+        "summary": "Daily note capturing a long conversation about interpretation.",
+        "applied": [
+          {
+            "tag": "area/brasstax/philosophy/epistemology",
+            "reason": "discusses how to interpret claims"
+          }
+        ],
+        "review_tags": [
+          {
+            "tag": "area/society/disinformation",
+            "reason": "possible fit, needs review"
+          }
+        ],
+        "rejected_tags": [
+          {
+            "tag": "type/source",
+            "why": "not an established tag"
+          }
+        ],
+        "review": [
+          {
+            "topic": "philosophy vs epistemology",
+            "options": [
+              "area/brasstax/philosophy",
+              "area/brasstax/philosophy/epistemology"
+            ],
+            "note": "ambiguous which level this belongs to"
+          }
+        ],
+        "extractions": [
+          {
+            "proposalId": "atom-steel-man-0123abcd",
+            "title": "Steel-man first",
+            "tags": [
+              "type/atom",
+              "area/brasstax/philosophy/epistemology"
+            ],
+            "source": "10_Daily/2026-10-12.md",
+            "reason": "self-contained principle stated as a rule"
+          }
+        ],
+        "skipped_extractions": [
+          {
+            "title": "Meeting logistics",
+            "why": "procedural, not reusable"
+          }
+        ],
+        "error": ""
+      },
+      {
+        "path": "30_Knowledge/Atoms/Steel-man first.md",
+        "append_only": true,
+        "summary": "",
+        "applied": [],
+        "review_tags": [],
+        "rejected_tags": [],
+        "review": [],
+        "extractions": [],
+        "skipped_extractions": [],
+        "error": "model timeout after 180s"
+      }
+    ],
+    "failures": [
+      {
+        "path": "30_Knowledge/Atoms/Steel-man first.md",
+        "error": "model timeout after 180s"
+      }
+    ],
+    "deleted": [
+      "10_Daily/2026-09-30.md"
+    ],
+    "state_errors": [
+      "corrupt state entry for 10_Daily/2026-09-30.md"
+    ],
+    "proposals": [
+      {
+        "proposalId": "atom-steel-man-0123abcd",
+        "title": "Steel-man first",
+        "tags": [
+          "type/atom",
+          "area/brasstax/philosophy/epistemology"
+        ],
+        "source": "10_Daily/2026-10-12.md",
+        "reason": "self-contained principle stated as a rule"
+      }
+    ]
+  },
+  "backup": "pushed to origin",
+  "obsidian": "synced to iCloud (last sync 2026-10-12 00:31)"
+}

@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""WATTSON structural vault digest.
+"""WATTSON vault digest (structural + intelligent semantic pass).
 
 Commits user (phone/desktop) changes as `sync:` when a digest is requested,
-then writes a structural digest note and commits it as `agent:`.
-Agent-made vault changes must be committed by the agent itself with an
-`agent:` prefix before a digest runs; anything left uncommitted at digest
+then runs the semantic pipeline (established-tag tagging + atom extraction
+proposals) on changed notes, writes a digest note, and commits it as
+`agent:`. Agent-made vault changes must be committed by the agent itself with
+an `agent:` prefix before a digest runs; anything left uncommitted at digest
 time is attributed to the user.
 """
 import argparse
 import datetime
 import fcntl
+import json
 import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "py"))
+from wattson.pipeline import run as pipeline_run  # noqa: E402
 
 AGENT_IDENTITY = ("WATTSON Agent", "agent@wattson.local")
 USER_IDENTITY = ("John Osullivan", "john.osullivan42@gmail.com")
@@ -101,72 +107,124 @@ def last_digest_commit(vault):
     return out or None
 
 
-def render_digest(vault, stamp, trigger, sync_sha, added, modified, deleted, renamed,
-                  agent_commits, since_label, inbox):
-    now = datetime.datetime.now().astimezone()
-    lines = [
-        "---",
-        "type: wattson-digest",
-        f"created: {now.strftime('%Y-%m-%d %H:%M')}",
-        f"trigger: {trigger}",
-        f"since: {since_label}",
-        "digest-version: 0",
-        "---",
-        "",
-        f"# Digest — {stamp}",
-        "",
-        f"## You {f'(`sync: {sync_sha}`)' if sync_sha else '(no uncommitted changes at trigger time)'}",
-        "",
-    ]
-    total = len(added) + len(modified) + len(deleted) + len(renamed)
-    lines.append(f"{total} path(s) changed since {since_label}.")
-    lines.append("")
+def _change_section(title, items):
+    groups = group_by_folder(items)
+    group_list = []
+    for folder in sorted(groups):
+        names = groups[folder]
+        group_list.append({
+            "folder": folder,
+            "count": len(names),
+            "root_single": len(names) == 1 and folder == "(vault root)",
+            "paths": names,
+        })
+    return {"title": title, "count": len(items), "groups": group_list}
 
-    def heading(title, items):
-        lines.append(f"### {title} ({len(items)})")
-        if not items:
-            lines.extend(["(none)", ""])
-            return
-        groups = group_by_folder(items)
-        for folder in sorted(groups):
-            names = groups[folder]
-            if len(names) == 1 and folder == "(vault root)":
-                lines.append(f"- `{names[0]}`")
-            else:
-                lines.append(f"- **{folder}** ({len(names)})")
-                lines.extend([f"  - `{n}`" for n in names])
-        lines.append("")
 
-    heading("Added", added)
-    heading("Modified", modified)
-    heading("Deleted", deleted)
-    heading("Renamed", renamed)
+def _semantic_doc(semantic):
+    if semantic is None:
+        return None
+    d = semantic.to_dict()
+    d["proposals"] = [e for n in d["notes"] for e in n["extractions"] if e.get("proposalId")]
+    return d
 
-    lines += ["## Agent since last digest", ""]
-    if not agent_commits:
-        lines += ["(none)", ""]
-    for c in agent_commits:
-        lines.append(f"- `{c['sha']}` {c['subject']}")
-        lines += [f"  - `{p}`" for p in c["paths"]]
-    if agent_commits:
-        lines.append("")
 
-    lines += [f"## Unfiled Inbox ({len(inbox)})", ""]
-    if inbox:
-        lines += [f"- `{p}`" for p in inbox]
-    else:
-        lines.append("(none)")
-    lines.append("")
+def build_digest_doc(stamp, trigger, created, sync_sha, added, modified, deleted, renamed,
+                     agent_commits, since_label, inbox, semantic=None, backup="", obsidian=""):
+    """Pure: build the structured digest document (a dict). No I/O, deterministic."""
+    return {
+        "type": "wattson-digest",
+        "digest-version": 1,
+        "stamp": stamp,
+        "created": created,
+        "trigger": trigger,
+        "since": since_label,
+        "sync_sha": sync_sha,
+        "changed_total": len(added) + len(modified) + len(deleted) + len(renamed),
+        "changes": [
+            _change_section("Added", added),
+            _change_section("Modified", modified),
+            _change_section("Deleted", deleted),
+            _change_section("Renamed", renamed),
+        ],
+        "agent_commits": agent_commits,
+        "inbox": inbox,
+        "semantic": _semantic_doc(semantic),
+        "backup": backup,
+        "obsidian": obsidian,
+    }
 
-    lines += ["## Proposals", "", "(none — v0 digest is read-only on your content)", ""]
-    return "\n".join(lines)
+
+def render_doc_markdown(doc, template="digest"):
+    """Render a machine document dict to Markdown via the deterministic Knap renderer."""
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(doc, f)
+        tmp = f.name
+    try:
+        r = subprocess.run(
+            ["npx", "tsx", "src/cli.ts", "render-doc", tmp, "--template", template],
+            capture_output=True, text=True, cwd=str(REPO_ROOT),
+        )
+        if r.returncode != 0:
+            raise RuntimeError(f"etk render-doc failed: {r.stderr.strip()[:300]}")
+        return r.stdout
+    finally:
+        Path(tmp).unlink(missing_ok=True)
+
+
+def obsidian_sync_status():
+    """Best-effort one-line Obsidian sync status from the vault CLI.
+
+    Returns '' when the vault container is down or the CLI errors — never raises,
+    so a digest can never fail because of it.
+    """
+    try:
+        r = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}", "--filter", "name=wattson-vault-obsidian"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if "wattson-vault-obsidian" not in r.stdout:
+            return ""
+        r = subprocess.run(
+            ["just", "vault-cli", "sync:status"],
+            capture_output=True, text=True, timeout=15, cwd=str(REPO_ROOT),
+        )
+        if r.returncode != 0:
+            return ""
+        lines = [l for l in (r.stdout or "").strip().splitlines() if l.strip()]
+        return lines[-1] if lines else ""
+    except (subprocess.SubprocessError, OSError):
+        return ""
+
+
+def render_digest(stamp, trigger, sync_sha, added, modified, deleted, renamed,
+                  agent_commits, since_label, inbox, semantic=None, backup="", obsidian=""):
+    created = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")
+    doc = build_digest_doc(stamp, trigger, created, sync_sha, added, modified, deleted, renamed,
+                           agent_commits, since_label, inbox, semantic=semantic,
+                           backup=backup, obsidian=obsidian)
+    return render_doc_markdown(doc), doc
+
+
+def push_backup(vault):
+    """Push to the configured vault remote (if any). Returns a one-line status."""
+    r = subprocess.run(["git", "-C", str(vault), "remote"], capture_output=True, text=True)
+    remotes = [x for x in r.stdout.split() if x]
+    if not remotes:
+        return "no remote configured — local commits only (set one with `git remote add origin <url>`)"
+    remote = remotes[0]
+    r = subprocess.run(["git", "-C", str(vault), "push"], capture_output=True, text=True)
+    if r.returncode == 0:
+        return f"pushed to {remote}"
+    return f"PUSH FAILED to {remote}: {(r.stderr or r.stdout).strip()[:300]}"
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Run a structural WATTSON vault digest.")
+    ap = argparse.ArgumentParser(description="Run a WATTSON vault digest (structural + semantic).")
     ap.add_argument("--vault", default="vault-runtime/vault-data")
     ap.add_argument("--request", help="marker filename (without .md); default: newest pending marker")
     ap.add_argument("--quiet", action="store_true", help="exit silently when no marker is pending")
+    ap.add_argument("--skip-semantic", action="store_true", help="run structural digest only (no model calls)")
     args = ap.parse_args()
 
     vault = Path(args.vault).expanduser().resolve()
@@ -206,10 +264,36 @@ def main():
     agent_commits = list_agent_commits(vault, since_commit, head)
     inbox = inbox_files(vault)
 
+    semantic = None
+    if args.skip_semantic:
+        semantic = pipeline_run.Report()
+        semantic.skipped = True
+        semantic.skip_reason = "--skip-semantic"
+    else:
+        try:
+            semantic = pipeline_run.run_intelligent_digest(vault)
+        except Exception as e:  # structural digest must still work if the model is down
+            semantic = pipeline_run.Report()
+            semantic.skipped = True
+            semantic.skip_reason = f"semantic pass crashed: {str(e)[:200]}"
+
+    if semantic is not None and not semantic.skipped:
+        if git(vault, "status", "--porcelain"):
+            git(vault, "add", "-A")
+            git(vault, "commit", "-m",
+                f"agent: digest {stamp} changes ({semantic.tagged} tagged, {semantic.atoms_proposed} proposals)",
+                identity=AGENT_IDENTITY)
+
+    backup = push_backup(vault) if semantic is not None and not semantic.skipped else ""
+    obsidian = obsidian_sync_status()
+
     note = vault / OUT_DIR / f"{stamp}.md"
     note.parent.mkdir(parents=True, exist_ok=True)
-    note.write_text(render_digest(vault, stamp, trigger, sync_sha, added, modified,
-                                  deleted, renamed, agent_commits, since_label, inbox))
+    md, doc = render_digest(stamp, trigger, sync_sha, added, modified,
+                            deleted, renamed, agent_commits, since_label, inbox,
+                            semantic=semantic, backup=backup, obsidian=obsidian)
+    note.write_text(md)
+    (vault / OUT_DIR / f"{stamp}.json").write_text(json.dumps(doc, indent=2), encoding="utf-8")
 
     if marker is not None:
         processed = marker.parent / "processed"
@@ -218,9 +302,17 @@ def main():
 
     git(vault, "add", "-A")
     git(vault, "commit", "-m", f"agent: digest {stamp}", identity=AGENT_IDENTITY)
+    if semantic is not None and not semantic.skipped:
+        backup2 = push_backup(vault)
+        if backup2.startswith("PUSH FAILED"):
+            print(f"warning: {backup2}", file=sys.stderr)
+    sem_summary = ""
+    if semantic is not None and not semantic.skipped:
+        sem_summary = (f"; semantic: {len(semantic.notes)} changed, {semantic.tagged} tagged, "
+                       f"{semantic.atoms_proposed} proposals, {len(semantic.failures)} failures")
     print(f"digest {stamp}: {len(added)} added, {len(modified)} modified, "
           f"{len(deleted)} deleted, {len(renamed)} renamed; agent commits: {len(agent_commits)}; "
-          f"inbox: {len(inbox)}; note: {note.relative_to(vault)}")
+          f"inbox: {len(inbox)}; backup: {backup}; note: {note.relative_to(vault)}{sem_summary}")
 
 
 if __name__ == "__main__":

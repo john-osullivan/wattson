@@ -1,0 +1,36 @@
+{
+  "source": {
+    "path": "Daily Notes/2026-10-01.md",
+    "fingerprint": "0a1b2c3d4e5f6071"
+  },
+  "proposals": [
+    {
+      "proposalId": "0a1b2c3d-1",
+      "status": "pending_review",
+      "note": {
+        "noteType": "atom",
+        "title": "Steel-man first",
+        "body": "Before dismissing an argument, state it in its strongest form.",
+        "tags": [
+          "type/atom",
+          "area/brasstax/philosophy/epistemology"
+        ],
+        "created": "2026-10-01",
+        "links": [
+          "area/brasstax/philosophy",
+          "10_Daily/2026-10-01"
+        ],
+        "relations": [
+          {
+            "type": "supports",
+            "target": "10_Daily/2026-10-01"
+          },
+          {
+            "type": "contradicts",
+            "target": "30_Knowledge/Atoms/Ad hominem"
+          }
+        ]
+      }
+    }
+  ]
+}

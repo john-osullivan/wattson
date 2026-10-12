@@ -47,6 +47,12 @@ vault-down:  # stop and remove the vault-runtime container
 digest:  # run vault digest now (newest pending marker, or manual stamp)
 	python3 scripts/vault_digest.py --vault {{justfile_directory()}}/vault-runtime/vault-data
 
+digest-structural:  # structural digest only, no model calls
+	python3 scripts/vault_digest.py --vault {{justfile_directory()}}/vault-runtime/vault-data --skip-semantic
+
+proposal *args:  # extraction proposals: just proposal list | show <id> | accept <id> | reject <id>
+	python3 scripts/vault_proposal.py --vault {{justfile_directory()}}/vault-runtime/vault-data {{args}}
+
 digest-watch:  # start background 30s poller; runs a digest when a marker note appears in 99_Machine/digest/requests/
 	@if [ -f /tmp/wattson-digest-watch.pid ] && kill -0 "$(cat /tmp/wattson-digest-watch.pid)" 2>/dev/null; then echo "digest watcher already running (pid $(cat /tmp/wattson-digest-watch.pid))"; else nohup bash -c 'while true; do python3 "{{justfile_directory()}}/scripts/vault_digest.py" --vault "{{justfile_directory()}}/vault-runtime/vault-data" --quiet; sleep 30; done' >> "{{justfile_directory()}}/vault-runtime/digest-watch.log" 2>&1 & echo $! > /tmp/wattson-digest-watch.pid; echo "digest watcher started (pid $(cat /tmp/wattson-digest-watch.pid), log: vault-runtime/digest-watch.log)"; fi
 
@@ -92,3 +98,6 @@ py-setup-ensure:  # no-op if py/.venv exists, else run just py-setup
 
 render *args:  # M1 command: just render <note.json> [-o out.md]
 	@npx tsx src/cli.ts render {{args}}
+
+render-doc *args:  # render a machine document: just render-doc <context.json> --template <name> [-o out.md]
+	@npx tsx src/cli.ts render-doc {{args}}
